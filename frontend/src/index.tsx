@@ -10,6 +10,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import App from "./App";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { AuthProvider } from "./hooks/useAuth";
 import theme from "./theme";
 
 const queryClient = new QueryClient({
@@ -31,7 +32,9 @@ root.render(
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <ErrorBoundary>
-          <App />
+          <AuthProvider>
+            <App />
+          </AuthProvider>
         </ErrorBoundary>
       </ThemeProvider>
     </QueryClientProvider>

@@ -86,7 +86,20 @@ async def get_evaluation(
     if not evaluation:
         raise HTTPException(status_code=404, detail="Evaluation not found")
 
-    return EvaluationResponse.model_validate(evaluation)
+    # Enrich with answer version data for the revision flow.
+    # The frontend needs answer_id (to POST new versions) and answer_text
+    # (to pre-populate the revision editor).
+    response = EvaluationResponse.model_validate(evaluation)
+    version_result = await db.execute(
+        select(AnswerVersion).where(AnswerVersion.id == evaluation.answer_version_id)
+    )
+    version = version_result.scalar_one_or_none()
+    if version:
+        response.answer_id = version.answer_id
+        response.answer_text = version.answer_text
+        response.version_number = version.version_number
+
+    return response
 
 
 @router.get("/{evaluation_id}/report/pdf")

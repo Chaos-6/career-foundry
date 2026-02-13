@@ -1,23 +1,26 @@
 /**
- * App shell layout with sidebar navigation.
+ * App shell layout with sidebar navigation and auth-aware header.
  *
- * Provides consistent navigation across all pages:
- * - Dashboard (placeholder for now)
- * - New Evaluation (the core flow)
- * - Question Bank (placeholder)
+ * Shows:
+ * - Sidebar with nav links to all features
+ * - Top bar with user info + login/logout button
+ * - Main content area via <Outlet />
  */
 
 import React from "react";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import {
   AppBar,
+  Avatar,
   Box,
+  Button,
   Drawer,
   IconButton,
   List,
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  Stack,
   Toolbar,
   Typography,
   useMediaQuery,
@@ -29,6 +32,9 @@ import RateReviewIcon from "@mui/icons-material/RateReview";
 import QuizIcon from "@mui/icons-material/Quiz";
 import TimerIcon from "@mui/icons-material/Timer";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import LoginIcon from "@mui/icons-material/Login";
+import LogoutIcon from "@mui/icons-material/Logout";
+import { useAuth } from "../hooks/useAuth";
 
 const DRAWER_WIDTH = 240;
 
@@ -46,6 +52,12 @@ export default function Layout() {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, isAuthenticated, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
 
   const drawer = (
     <Box>
@@ -92,9 +104,51 @@ export default function Layout() {
               <MenuIcon />
             </IconButton>
           )}
-          <Typography variant="h6" noWrap>
+          <Typography variant="h6" noWrap sx={{ flexGrow: 1 }}>
             Behavioral Interview Answer Evaluator
           </Typography>
+
+          {/* Auth section */}
+          {isAuthenticated ? (
+            <Stack direction="row" alignItems="center" spacing={1.5}>
+              <Avatar
+                sx={{
+                  width: 32,
+                  height: 32,
+                  bgcolor: "secondary.main",
+                  fontSize: 14,
+                  fontWeight: 600,
+                }}
+              >
+                {(user?.display_name || user?.email || "U")
+                  .charAt(0)
+                  .toUpperCase()}
+              </Avatar>
+              <Typography
+                variant="body2"
+                sx={{ display: { xs: "none", sm: "block" } }}
+              >
+                {user?.display_name || user?.email}
+              </Typography>
+              <Button
+                color="inherit"
+                size="small"
+                startIcon={<LogoutIcon />}
+                onClick={handleLogout}
+                sx={{ ml: 1 }}
+              >
+                Logout
+              </Button>
+            </Stack>
+          ) : (
+            <Button
+              color="inherit"
+              startIcon={<LoginIcon />}
+              onClick={() => navigate("/login")}
+            >
+              Sign In
+            </Button>
+          )}
         </Toolbar>
       </AppBar>
 

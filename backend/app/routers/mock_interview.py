@@ -3,8 +3,10 @@ Mock interview endpoints.
 
 Manages timed practice sessions where the user answers under time pressure.
 The timer runs on the frontend; the backend tracks session metadata.
+If the user is logged in, sessions are linked to their account.
 """
 
+from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -13,7 +15,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models import MockSession, Question
+from app.dependencies import get_optional_user
+from app.models import MockSession, Question, User
 
 router = APIRouter(prefix="/api/v1/mock", tags=["mock-interview"])
 
@@ -48,6 +51,7 @@ class MockSessionComplete(BaseModel):
 async def start_mock_session(
     request: MockSessionCreate,
     db: AsyncSession = Depends(get_db),
+    user: Optional[User] = Depends(get_optional_user),
 ):
     """Start a new mock interview session.
 
@@ -64,7 +68,7 @@ async def start_mock_session(
 
     # Create session
     session_record = MockSession(
-        user_id=None,  # Pre-auth
+        user_id=user.id if user else None,
         question_id=request.question_id,
         time_limit_seconds=request.time_limit_seconds,
     )

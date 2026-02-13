@@ -4,9 +4,14 @@
  * Every backend endpoint gets a typed function. The frontend never
  * constructs URLs directly — this file is the single source of truth
  * for API communication.
+ *
+ * Auth flow:
+ * - Request interceptor attaches Bearer token from localStorage
+ * - Response interceptor catches 401, refreshes token, retries original request
+ * - Token helpers (getAccessToken, setTokens, clearTokens) used by useAuth hook
  */
 
-import axios from "axios";
+import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
@@ -14,6 +19,135 @@ const api = axios.create({
   baseURL: API_BASE,
   headers: { "Content-Type": "application/json" },
 });
+
+// ---------------------------------------------------------------------------
+// Token helpers — localStorage is the single source of truth for tokens
+// ---------------------------------------------------------------------------
+
+const ACCESS_TOKEN_KEY = "biae_access_token";
+const REFRESH_TOKEN_KEY = "biae_refresh_token";
+
+export function getAccessToken(): string | null {
+  return localStorage.getItem(ACCESS_TOKEN_KEY);
+}
+
+export function getRefreshToken(): string | null {
+  return localStorage.getItem(REFRESH_TOKEN_KEY);
+}
+
+export function setTokens(accessToken: string, refreshToken: string): void {
+  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+}
+
+export function clearTokens(): void {
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
+}
+
+// ---------------------------------------------------------------------------
+// Request interceptor — attach Bearer token to every request
+// ---------------------------------------------------------------------------
+
+api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  const token = getAccessToken();
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// ---------------------------------------------------------------------------
+// Response interceptor — refresh token on 401, retry original request
+//
+// Handles concurrent 401s: only one refresh in flight at a time.
+// Other requests queue up and retry once the refresh completes.
+// ---------------------------------------------------------------------------
+
+let isRefreshing = false;
+let pendingRequests: Array<{
+  resolve: (token: string) => void;
+  reject: (err: unknown) => void;
+}> = [];
+
+function onRefreshComplete(newToken: string) {
+  pendingRequests.forEach((p) => p.resolve(newToken));
+  pendingRequests = [];
+}
+
+function onRefreshFailed(err: unknown) {
+  pendingRequests.forEach((p) => p.reject(err));
+  pendingRequests = [];
+}
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & {
+      _retry?: boolean;
+    };
+
+    // Only intercept 401s, and don't retry auth endpoints or already-retried requests
+    if (
+      error.response?.status !== 401 ||
+      !originalRequest ||
+      originalRequest._retry ||
+      originalRequest.url?.startsWith("/auth/")
+    ) {
+      return Promise.reject(error);
+    }
+
+    const refreshToken = getRefreshToken();
+    if (!refreshToken) {
+      clearTokens();
+      return Promise.reject(error);
+    }
+
+    if (isRefreshing) {
+      // Another request is already refreshing — queue this one
+      return new Promise((resolve, reject) => {
+        pendingRequests.push({
+          resolve: (token: string) => {
+            originalRequest._retry = true;
+            if (originalRequest.headers) {
+              originalRequest.headers.Authorization = `Bearer ${token}`;
+            }
+            resolve(api(originalRequest));
+          },
+          reject,
+        });
+      });
+    }
+
+    isRefreshing = true;
+    originalRequest._retry = true;
+
+    try {
+      // Call refresh endpoint directly (not through intercepted api instance)
+      const { data } = await axios.post<TokenResponse>(
+        `${API_BASE}/auth/refresh`,
+        { refresh_token: refreshToken }
+      );
+
+      setTokens(data.access_token, data.refresh_token);
+      onRefreshComplete(data.access_token);
+
+      // Retry original request with new token
+      if (originalRequest.headers) {
+        originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
+      }
+      return api(originalRequest);
+    } catch (refreshError) {
+      onRefreshFailed(refreshError);
+      clearTokens();
+      // Redirect to login if refresh fails
+      window.location.href = "/login";
+      return Promise.reject(refreshError);
+    } finally {
+      isRefreshing = false;
+    }
+  }
+);
 
 // ---------------------------------------------------------------------------
 // Types
@@ -79,6 +213,9 @@ export interface Answer {
 export interface Evaluation {
   id: string;
   answer_version_id: string;
+  answer_id: string | null;        // parent answer — for revision flow
+  answer_text: string | null;      // the answer text that was evaluated
+  version_number: number | null;   // which version this evaluation is for
   status: "queued" | "analyzing" | "completed" | "failed";
   situation_score: number | null;
   task_score: number | null;
@@ -97,6 +234,59 @@ export interface Evaluation {
   processing_seconds: number | null;
   error_message: string | null;
   created_at: string;
+}
+
+// ---------------------------------------------------------------------------
+// Auth types
+// ---------------------------------------------------------------------------
+
+export interface TokenResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+}
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  display_name: string | null;
+  default_role: string | null;
+  default_experience_level: string | null;
+  plan_tier: string;
+  evaluations_this_month: number;
+}
+
+// ---------------------------------------------------------------------------
+// Auth endpoints
+// ---------------------------------------------------------------------------
+
+export async function loginUser(payload: {
+  email: string;
+  password: string;
+}): Promise<TokenResponse> {
+  const { data } = await api.post<TokenResponse>("/auth/login", payload);
+  return data;
+}
+
+export async function registerUser(payload: {
+  email: string;
+  password: string;
+  display_name?: string;
+}): Promise<TokenResponse> {
+  const { data } = await api.post<TokenResponse>("/auth/register", payload);
+  return data;
+}
+
+export async function refreshTokens(refreshToken: string): Promise<TokenResponse> {
+  const { data } = await api.post<TokenResponse>("/auth/refresh", {
+    refresh_token: refreshToken,
+  });
+  return data;
+}
+
+export async function getMe(): Promise<AuthUser> {
+  const { data } = await api.get<AuthUser>("/auth/me");
+  return data;
 }
 
 // ---------------------------------------------------------------------------

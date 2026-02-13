@@ -44,6 +44,9 @@ class EvaluationResponse(BaseModel):
 
     id: UUID
     answer_version_id: UUID
+    answer_id: Optional[UUID] = None  # parent answer — needed for revision flow
+    answer_text: Optional[str] = None  # the answer text that was evaluated
+    version_number: Optional[int] = None
     status: str  # queued, analyzing, completed, failed
 
     # Scores (null until completed)

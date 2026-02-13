@@ -4,10 +4,11 @@ Answer endpoints.
 Handles creating answers with their first version, adding new versions
 (revisions), and retrieving answer details.
 
-Pre-auth: user_id is not required — the evaluation flow works without
-authentication. Auth is added in Milestone 7.
+Auth is optional — the evaluation flow works without authentication
+(user_id=None), but logged-in users get their answers linked to their account.
 """
 
+from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -16,7 +17,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
-from app.models import Answer, AnswerVersion, CompanyProfile, Evaluation, Question
+from app.dependencies import get_optional_user
+from app.models import Answer, AnswerVersion, CompanyProfile, Evaluation, Question, User
 from app.schemas.answers import (
     AnswerComparisonResponse,
     AnswerCreateRequest,
@@ -34,12 +36,14 @@ router = APIRouter(prefix="/api/v1/answers", tags=["answers"])
 async def create_answer(
     request: AnswerCreateRequest,
     db: AsyncSession = Depends(get_db),
+    user: Optional[User] = Depends(get_optional_user),
 ):
     """Create a new answer with its first version.
 
     The answer links a question + company/role/level context.
     The first AnswerVersion is created automatically with the
-    provided answer_text.
+    provided answer_text. If the user is logged in, the answer
+    is linked to their account.
 
     Either question_id or custom_question_text must be provided.
     """
@@ -70,7 +74,7 @@ async def create_answer(
 
     # Create answer
     answer = Answer(
-        user_id=None,  # Pre-auth: no user
+        user_id=user.id if user else None,
         question_id=request.question_id,
         custom_question_text=request.custom_question_text,
         target_company_id=request.target_company_id,

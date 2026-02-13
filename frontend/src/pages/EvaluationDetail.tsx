@@ -1,15 +1,21 @@
 /**
- * Evaluation Detail page — shows scores and full feedback.
+ * Evaluation Detail page — shows scores, full feedback, and revision flow.
  *
  * Polls the evaluation status until it transitions to 'completed' or 'failed'.
  * Then renders:
  * - 6-dimension score bars
  * - Full evaluation markdown
  * - PDF download button
- * - "Revise & Re-Evaluate" button (placeholder for Milestone 6)
+ * - "Revise & Re-Evaluate" inline editor
+ *
+ * Revision flow:
+ * 1. User clicks "Revise & Re-Evaluate"
+ * 2. Editor opens pre-populated with the evaluated answer text
+ * 3. User edits their answer based on feedback
+ * 4. Submit creates a new AnswerVersion + Evaluation and navigates to it
  */
 
-import React from "react";
+import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -20,23 +26,39 @@ import {
   CardContent,
   Chip,
   CircularProgress,
+  Collapse,
   Divider,
   Grid,
   Paper,
   Stack,
+  TextField,
   Typography,
 } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
 import EditIcon from "@mui/icons-material/Edit";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import SendIcon from "@mui/icons-material/Send";
+import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
+import CloseIcon from "@mui/icons-material/Close";
 
-import { getEvaluation, getEvaluationPdfUrl, Evaluation } from "../api/client";
+import {
+  getEvaluation,
+  getEvaluationPdfUrl,
+  createVersion,
+  createEvaluation,
+} from "../api/client";
 import ScoreBar from "../components/ScoreBar";
 import SimpleMarkdown from "../components/SimpleMarkdown";
 
 export default function EvaluationDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+
+  // Revision state
+  const [revising, setRevising] = useState(false);
+  const [revisedText, setRevisedText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [revisionError, setRevisionError] = useState<string | null>(null);
 
   const {
     data: evaluation,
@@ -48,12 +70,62 @@ export default function EvaluationDetail() {
     enabled: !!id,
     refetchInterval: (query) => {
       const data = query.state.data;
-      // Poll every 2s while not completed/failed
       if (!data) return 2000;
       if (data.status === "completed" || data.status === "failed") return false;
       return 2000;
     },
   });
+
+  // Open revision editor with the current answer pre-populated
+  const handleStartRevise = () => {
+    if (evaluation?.answer_text) {
+      setRevisedText(evaluation.answer_text);
+    }
+    setRevisionError(null);
+    setRevising(true);
+  };
+
+  // Submit revised answer: create new version → create evaluation → navigate
+  const handleSubmitRevision = async () => {
+    if (!evaluation?.answer_id) {
+      setRevisionError("Cannot revise: missing answer context.");
+      return;
+    }
+    if (revisedText.trim().split(/\s+/).length < 10) {
+      setRevisionError("Your revised answer must be at least 10 words.");
+      return;
+    }
+    if (revisedText.trim() === evaluation.answer_text?.trim()) {
+      setRevisionError(
+        "Your revision is identical to the original. Make changes based on the feedback above."
+      );
+      return;
+    }
+
+    setSubmitting(true);
+    setRevisionError(null);
+
+    try {
+      // 1. Create new version
+      const newVersion = await createVersion(evaluation.answer_id, {
+        answer_text: revisedText.trim(),
+      });
+
+      // 2. Kick off evaluation on the new version
+      const newEval = await createEvaluation(newVersion.id);
+
+      // 3. Navigate to the new evaluation (will show polling → results)
+      navigate(`/evaluations/${newEval.id}`, { replace: false });
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.detail ||
+        err?.message ||
+        "Failed to submit revision.";
+      setRevisionError(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -126,21 +198,32 @@ export default function EvaluationDetail() {
     );
   }
 
+  // Word count for revision
+  const wordCount = revisedText.trim().split(/\s+/).filter(Boolean).length;
+
   // --- Completed state ---
   return (
     <Box sx={{ maxWidth: 900, mx: "auto" }}>
       {/* Header */}
       <Stack
-        direction="row"
+        direction={{ xs: "column", sm: "row" }}
         justifyContent="space-between"
-        alignItems="center"
+        alignItems={{ xs: "flex-start", sm: "center" }}
+        spacing={2}
         sx={{ mb: 3 }}
       >
         <Box>
           <Typography variant="h4" gutterBottom>
             Evaluation Results
+            {evaluation.version_number && (
+              <Chip
+                label={`v${evaluation.version_number}`}
+                size="small"
+                sx={{ ml: 1, verticalAlign: "middle" }}
+              />
+            )}
           </Typography>
-          <Stack direction="row" spacing={1}>
+          <Stack direction="row" spacing={1} flexWrap="wrap">
             <Chip label={evaluation.model_used || "claude"} size="small" />
             {evaluation.processing_seconds && (
               <Chip
@@ -160,24 +243,123 @@ export default function EvaluationDetail() {
             )}
           </Stack>
         </Box>
-        <Stack direction="row" spacing={1}>
+        <Stack direction="row" spacing={1} flexWrap="wrap">
           <Button
             variant="contained"
+            color="secondary"
+            startIcon={<EditIcon />}
+            onClick={handleStartRevise}
+            disabled={!evaluation.answer_id || revising}
+          >
+            Revise & Re-Evaluate
+          </Button>
+          {evaluation.answer_id && (
+            <Button
+              variant="outlined"
+              startIcon={<CompareArrowsIcon />}
+              onClick={() =>
+                navigate(`/answers/${evaluation.answer_id}/compare`)
+              }
+            >
+              Compare Versions
+            </Button>
+          )}
+          <Button
+            variant="outlined"
             startIcon={<DownloadIcon />}
             href={getEvaluationPdfUrl(evaluation.id)}
             target="_blank"
           >
-            Download PDF
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<EditIcon />}
-            onClick={() => navigate("/evaluate")}
-          >
-            New Evaluation
+            PDF
           </Button>
         </Stack>
       </Stack>
+
+      {/* Revision Editor — collapsible panel */}
+      <Collapse in={revising}>
+        <Card
+          sx={{
+            mb: 3,
+            border: 2,
+            borderColor: "secondary.main",
+            bgcolor: "secondary.50",
+          }}
+        >
+          <CardContent>
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+              sx={{ mb: 2 }}
+            >
+              <Typography variant="h6" color="secondary.dark">
+                Revise Your Answer
+              </Typography>
+              <Button
+                size="small"
+                startIcon={<CloseIcon />}
+                onClick={() => setRevising(false)}
+                color="inherit"
+              >
+                Cancel
+              </Button>
+            </Stack>
+
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Edit your answer below based on the feedback. Focus on the weakest
+              dimension scores. Your original answer is pre-loaded — modify it
+              and submit to create a new version with a fresh evaluation.
+            </Typography>
+
+            <TextField
+              multiline
+              minRows={8}
+              maxRows={20}
+              fullWidth
+              value={revisedText}
+              onChange={(e) => setRevisedText(e.target.value)}
+              placeholder="Edit your STAR answer here..."
+              sx={{
+                mb: 1,
+                "& .MuiOutlinedInput-root": { bgcolor: "white" },
+              }}
+            />
+
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+            >
+              <Typography variant="caption" color="text.secondary">
+                {wordCount} words
+                {wordCount < 100 && " (aim for 200-400 words)"}
+              </Typography>
+              <Stack direction="row" spacing={1}>
+                {revisionError && (
+                  <Alert severity="error" sx={{ py: 0 }}>
+                    {revisionError}
+                  </Alert>
+                )}
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  startIcon={
+                    submitting ? (
+                      <CircularProgress size={18} color="inherit" />
+                    ) : (
+                      <SendIcon />
+                    )
+                  }
+                  onClick={handleSubmitRevision}
+                  disabled={submitting || wordCount < 10}
+                >
+                  {submitting ? "Submitting..." : "Submit Revision"}
+                </Button>
+              </Stack>
+            </Stack>
+          </CardContent>
+        </Card>
+      </Collapse>
 
       <Grid container spacing={3}>
         {/* Score Panel */}
