@@ -482,6 +482,48 @@ export async function getScoreHistory(
 }
 
 // ---------------------------------------------------------------------------
+// Analytics endpoints
+// ---------------------------------------------------------------------------
+
+export interface DimensionAverage {
+  dimension: string;
+  average: number;
+  count: number;
+}
+
+export interface CompanyBreakdown {
+  company_name: string;
+  evaluation_count: number;
+  average_score: number | null;
+  best_score: number | null;
+  situation_avg: number | null;
+  task_avg: number | null;
+  action_avg: number | null;
+  result_avg: number | null;
+  engagement_avg: number | null;
+  overall_avg: number | null;
+}
+
+export interface ReadinessScore {
+  overall_readiness: number;
+  score_component: number;
+  consistency_component: number;
+  trend_component: number;
+  label: string;
+}
+
+export interface AnalyticsData {
+  dimension_averages: DimensionAverage[];
+  company_breakdowns: CompanyBreakdown[];
+  readiness: ReadinessScore | null;
+}
+
+export async function getAnalytics(): Promise<AnalyticsData> {
+  const { data } = await api.get<AnalyticsData>("/api/v1/dashboard/analytics");
+  return data;
+}
+
+// ---------------------------------------------------------------------------
 // Mock Interview endpoints
 // ---------------------------------------------------------------------------
 

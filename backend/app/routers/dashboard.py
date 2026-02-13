@@ -229,3 +229,213 @@ async def get_score_history(
         )
         for row in rows
     ]
+
+
+# ---------------------------------------------------------------------------
+# Advanced analytics schemas
+# ---------------------------------------------------------------------------
+
+class DimensionAverage(BaseModel):
+    """Average score for a single STAR dimension."""
+
+    dimension: str
+    average: float
+    count: int
+
+
+class CompanyBreakdown(BaseModel):
+    """Aggregated scores for a specific company target."""
+
+    company_name: str
+    evaluation_count: int
+    average_score: float | None
+    best_score: float | None
+    situation_avg: float | None
+    task_avg: float | None
+    action_avg: float | None
+    result_avg: float | None
+    engagement_avg: float | None
+    overall_avg: float | None
+
+
+class ReadinessScore(BaseModel):
+    """Interview readiness calculation.
+
+    Weights:
+    - score_component (40%): avg score normalised to 0-100
+    - consistency_component (30%): low std-dev across dimensions → high consistency
+    - trend_component (30%): positive slope from first to last evaluation → improvement
+    """
+
+    overall_readiness: int  # 0-100
+    score_component: int
+    consistency_component: int
+    trend_component: int
+    label: str  # "Not Ready", "Getting There", "Interview Ready", "Strong Candidate"
+
+
+class AnalyticsResponse(BaseModel):
+    """All analytics data in a single response to minimise roundtrips."""
+
+    dimension_averages: list[DimensionAverage]
+    company_breakdowns: list[CompanyBreakdown]
+    readiness: ReadinessScore | None
+
+
+@router.get("/analytics", response_model=AnalyticsResponse)
+async def get_analytics(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Comprehensive analytics for the Advanced Analytics page.
+
+    Returns:
+    - Per-dimension averages (for radar chart)
+    - Per-company breakdowns (for comparison table)
+    - Interview readiness score (weighted composite)
+    """
+    # ── Per-dimension averages ──────────────────────────────────────────
+    dim_query = (
+        select(
+            func.avg(Evaluation.situation_score),
+            func.avg(Evaluation.task_score),
+            func.avg(Evaluation.action_score),
+            func.avg(Evaluation.result_score),
+            func.avg(Evaluation.engagement_score),
+            func.avg(Evaluation.overall_score),
+            func.count(Evaluation.id),
+        )
+        .join(AnswerVersion, Evaluation.answer_version_id == AnswerVersion.id)
+        .join(Answer, AnswerVersion.answer_id == Answer.id)
+        .where(Answer.user_id == user.id, Evaluation.status == "completed")
+    )
+    dim_result = await db.execute(dim_query)
+    dim_row = dim_result.one()
+    total_count = dim_row[6] or 0
+
+    dimension_names = [
+        "Situation", "Task", "Action", "Result", "Engagement", "Overall"
+    ]
+    dimension_averages = []
+    for i, name in enumerate(dimension_names):
+        val = dim_row[i]
+        dimension_averages.append(
+            DimensionAverage(
+                dimension=name,
+                average=round(float(val), 2) if val else 0.0,
+                count=total_count,
+            )
+        )
+
+    # ── Per-company breakdowns ──────────────────────────────────────────
+    company_query = (
+        select(
+            CompanyProfile.name,
+            func.count(Evaluation.id),
+            func.avg(Evaluation.average_score),
+            func.max(Evaluation.average_score),
+            func.avg(Evaluation.situation_score),
+            func.avg(Evaluation.task_score),
+            func.avg(Evaluation.action_score),
+            func.avg(Evaluation.result_score),
+            func.avg(Evaluation.engagement_score),
+            func.avg(Evaluation.overall_score),
+        )
+        .join(AnswerVersion, Evaluation.answer_version_id == AnswerVersion.id)
+        .join(Answer, AnswerVersion.answer_id == Answer.id)
+        .join(CompanyProfile, Answer.target_company_id == CompanyProfile.id)
+        .where(Answer.user_id == user.id, Evaluation.status == "completed")
+        .group_by(CompanyProfile.name)
+        .order_by(func.count(Evaluation.id).desc())
+    )
+    company_result = await db.execute(company_query)
+    company_rows = company_result.all()
+
+    def _round_or_none(val: any) -> float | None:
+        return round(float(val), 1) if val else None
+
+    company_breakdowns = [
+        CompanyBreakdown(
+            company_name=row[0],
+            evaluation_count=row[1],
+            average_score=_round_or_none(row[2]),
+            best_score=_round_or_none(row[3]),
+            situation_avg=_round_or_none(row[4]),
+            task_avg=_round_or_none(row[5]),
+            action_avg=_round_or_none(row[6]),
+            result_avg=_round_or_none(row[7]),
+            engagement_avg=_round_or_none(row[8]),
+            overall_avg=_round_or_none(row[9]),
+        )
+        for row in company_rows
+    ]
+
+    # ── Readiness score ─────────────────────────────────────────────────
+    readiness = None
+    if total_count > 0:
+        # Score component (40%): avg score on 1-5 scale → 0-100
+        avg_scores = [
+            float(dim_row[i]) for i in range(6) if dim_row[i] is not None
+        ]
+        overall_avg = sum(avg_scores) / len(avg_scores) if avg_scores else 0
+        score_component = min(100, int((overall_avg / 5) * 100))
+
+        # Consistency component (30%): low variance = high consistency
+        if len(avg_scores) >= 2:
+            mean_s = sum(avg_scores) / len(avg_scores)
+            variance = sum((s - mean_s) ** 2 for s in avg_scores) / len(avg_scores)
+            # Max variance on 1-5 scale is about 4.0; low variance → high score
+            consistency_component = max(0, min(100, int((1 - (variance / 4)) * 100)))
+        else:
+            consistency_component = 50  # neutral if only one dimension
+
+        # Trend component (30%): compare first and last evaluation averages
+        trend_query = (
+            select(Evaluation.average_score, Evaluation.created_at)
+            .join(AnswerVersion, Evaluation.answer_version_id == AnswerVersion.id)
+            .join(Answer, AnswerVersion.answer_id == Answer.id)
+            .where(Answer.user_id == user.id, Evaluation.status == "completed")
+            .order_by(Evaluation.created_at.asc())
+        )
+        trend_result = await db.execute(trend_query)
+        trend_rows = trend_result.all()
+
+        if len(trend_rows) >= 2:
+            first_score = float(trend_rows[0][0]) if trend_rows[0][0] else 0
+            last_score = float(trend_rows[-1][0]) if trend_rows[-1][0] else 0
+            delta = last_score - first_score
+            # Delta range: -4 to +4 on 1-5 scale; map to 0-100
+            trend_component = max(0, min(100, int(50 + (delta / 4) * 50)))
+        else:
+            trend_component = 50  # neutral if only one evaluation
+
+        # Weighted composite
+        overall_readiness = int(
+            score_component * 0.4
+            + consistency_component * 0.3
+            + trend_component * 0.3
+        )
+
+        # Label
+        if overall_readiness >= 80:
+            label = "Strong Candidate"
+        elif overall_readiness >= 60:
+            label = "Interview Ready"
+        elif overall_readiness >= 40:
+            label = "Getting There"
+        else:
+            label = "Not Ready"
+
+        readiness = ReadinessScore(
+            overall_readiness=overall_readiness,
+            score_component=score_component,
+            consistency_component=consistency_component,
+            trend_component=trend_component,
+            label=label,
+        )
+
+    return AnalyticsResponse(
+        dimension_averages=dimension_averages,
+        company_breakdowns=company_breakdowns,
+        readiness=readiness,
+    )

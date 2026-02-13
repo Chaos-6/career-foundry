@@ -9,6 +9,7 @@
  * - /mock             Mock Interview (protected)
  * - /generator        AI Answer Generator (protected)
  * - /questions        Question Bank (public — browsing is free)
+ * - /analytics        Advanced Analytics (protected)
  *
  * Why some routes are public:
  *   The dashboard and question bank are discovery surfaces. Letting
@@ -30,6 +31,7 @@ import MockInterview from "./pages/MockInterview";
 import AnswerGenerator from "./pages/AnswerGenerator";
 import QuestionBank from "./pages/QuestionBank";
 import VersionComparison from "./pages/VersionComparison";
+import Analytics from "./pages/Analytics";
 
 function App() {
   return (
@@ -74,6 +76,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <AnswerGenerator />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <ProtectedRoute>
+                <Analytics />
               </ProtectedRoute>
             }
           />
