@@ -1,0 +1,170 @@
+"""
+Evaluation endpoints.
+
+POST creates an evaluation record and kicks off the Claude analysis
+as a background task. GET polls the evaluation status/results.
+
+The evaluation pipeline runs asynchronously — the frontend polls
+GET /evaluations/{id} until status transitions to 'completed' or 'failed'.
+"""
+
+from uuid import UUID
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi.responses import Response
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
+from app.database import get_db
+from app.models import Answer, AnswerVersion, CompanyProfile, Evaluation, Question
+from app.schemas.evaluations import EvaluationCreateRequest, EvaluationResponse
+from app.services.evaluation_pipeline import run_evaluation_pipeline
+from app.services.pdf_report import PDFReportGenerator
+
+router = APIRouter(prefix="/api/v1/evaluations", tags=["evaluations"])
+
+
+@router.post("", response_model=EvaluationResponse, status_code=201)
+async def create_evaluation(
+    request: EvaluationCreateRequest,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+):
+    """Create a new evaluation and kick off the analysis pipeline.
+
+    The evaluation is created with status='queued', then the background
+    task runs the Claude analysis. The frontend polls GET /evaluations/{id}
+    to track progress.
+
+    Returns the evaluation immediately (status=queued) — don't wait
+    for Claude.
+    """
+    # Validate answer version exists
+    version_result = await db.execute(
+        select(AnswerVersion).where(AnswerVersion.id == request.answer_version_id)
+    )
+    version = version_result.scalar_one_or_none()
+
+    if not version:
+        raise HTTPException(status_code=404, detail="Answer version not found")
+
+    # Create evaluation record
+    evaluation = Evaluation(
+        answer_version_id=request.answer_version_id,
+        status="queued",
+    )
+    db.add(evaluation)
+    await db.commit()
+    await db.refresh(evaluation)
+
+    # Kick off background pipeline
+    background_tasks.add_task(run_evaluation_pipeline, evaluation.id)
+
+    return EvaluationResponse.model_validate(evaluation)
+
+
+@router.get("/{evaluation_id}", response_model=EvaluationResponse)
+async def get_evaluation(
+    evaluation_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """Get evaluation status and results.
+
+    The frontend polls this endpoint with refetchInterval until
+    status is 'completed' or 'failed'.
+
+    Status transitions:
+        queued → analyzing → completed
+                          → failed (with error_message)
+    """
+    result = await db.execute(
+        select(Evaluation).where(Evaluation.id == evaluation_id)
+    )
+    evaluation = result.scalar_one_or_none()
+
+    if not evaluation:
+        raise HTTPException(status_code=404, detail="Evaluation not found")
+
+    return EvaluationResponse.model_validate(evaluation)
+
+
+@router.get("/{evaluation_id}/report/pdf")
+async def download_evaluation_pdf(
+    evaluation_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """Download the evaluation as a professional PDF report.
+
+    Only available for completed evaluations. Generates the PDF on-demand
+    (fast enough that no caching is needed for MVP).
+    """
+    # Load evaluation
+    result = await db.execute(
+        select(Evaluation).where(Evaluation.id == evaluation_id)
+    )
+    evaluation = result.scalar_one_or_none()
+
+    if not evaluation:
+        raise HTTPException(status_code=404, detail="Evaluation not found")
+
+    if evaluation.status != "completed":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Evaluation is not complete (status: {evaluation.status})",
+        )
+
+    # Load answer version → answer → company + question
+    version_result = await db.execute(
+        select(AnswerVersion).where(AnswerVersion.id == evaluation.answer_version_id)
+    )
+    version = version_result.scalar_one_or_none()
+
+    answer_result = await db.execute(
+        select(Answer)
+        .where(Answer.id == version.answer_id)
+        .options(selectinload(Answer.company))
+    )
+    answer = answer_result.scalar_one_or_none()
+    company = answer.company
+
+    # Get question text
+    question_text = answer.custom_question_text
+    if answer.question_id and not question_text:
+        q_result = await db.execute(
+            select(Question).where(Question.id == answer.question_id)
+        )
+        question = q_result.scalar_one_or_none()
+        question_text = question.question_text if question else "General behavioral question"
+    if not question_text:
+        question_text = "General behavioral question"
+
+    # Generate PDF
+    generator = PDFReportGenerator()
+    pdf_bytes = generator.generate_evaluation_report(
+        company_name=company.name,
+        target_role=answer.target_role,
+        experience_level=answer.experience_level,
+        question_text=question_text,
+        answer_text=version.answer_text,
+        word_count=version.word_count,
+        situation_score=evaluation.situation_score,
+        task_score=evaluation.task_score,
+        action_score=evaluation.action_score,
+        result_score=evaluation.result_score,
+        engagement_score=evaluation.engagement_score,
+        overall_score=evaluation.overall_score,
+        average_score=evaluation.average_score,
+        evaluation_markdown=evaluation.evaluation_markdown,
+        company_alignment=evaluation.company_alignment,
+        follow_up_questions=evaluation.follow_up_questions,
+        evaluation_sections=evaluation.evaluation_sections,
+    )
+
+    filename = f"STAR_Evaluation_{company.slug}_{answer.target_role}.pdf"
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
