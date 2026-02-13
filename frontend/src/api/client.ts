@@ -419,6 +419,69 @@ export function getEvaluationPdfUrl(id: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Dashboard endpoints
+// ---------------------------------------------------------------------------
+
+export interface DashboardStats {
+  total_evaluations: number;
+  average_score: number | null;
+  best_score: number | null;
+  total_answers: number;
+  evaluations_this_month: number;
+}
+
+export interface RecentEvaluation {
+  evaluation_id: string;
+  answer_id: string;
+  question_text: string | null;
+  company_name: string | null;
+  target_role: string;
+  average_score: number | null;
+  status: string;
+  created_at: string;
+  version_number: number | null;
+}
+
+export interface ScoreDataPoint {
+  evaluation_id: string;
+  date: string;
+  situation: number | null;
+  task: number | null;
+  action: number | null;
+  result: number | null;
+  engagement: number | null;
+  overall: number | null;
+  average: number | null;
+  company_name: string | null;
+  target_role: string | null;
+}
+
+export async function getDashboardStats(): Promise<DashboardStats> {
+  const { data } = await api.get<DashboardStats>("/api/v1/dashboard/stats");
+  return data;
+}
+
+export async function getRecentEvaluations(
+  limit = 10
+): Promise<RecentEvaluation[]> {
+  const { data } = await api.get<RecentEvaluation[]>(
+    "/api/v1/dashboard/recent",
+    { params: { limit } }
+  );
+  return data;
+}
+
+export async function getScoreHistory(
+  limit = 30
+): Promise<ScoreDataPoint[]> {
+  const { data } = await api.get<ScoreDataPoint[]>(
+    "/api/v1/dashboard/score-history",
+    { params: { limit } }
+  );
+  return data;
+}
+
+// ---------------------------------------------------------------------------
 // Mock Interview endpoints
 // ---------------------------------------------------------------------------
 

@@ -1,20 +1,38 @@
 /**
- * Dashboard page — landing hub with all features.
+ * Dashboard page — personalized landing hub.
  *
- * Shows:
- * - 4 feature cards (Evaluate, Mock Interview, AI Generator, Question Bank)
+ * Shows different content based on auth state:
+ *
+ * Unauthenticated:
+ * - 4 feature cards (Evaluate, Mock, Generator, Question Bank)
  * - "How It Works" explainer
+ *
+ * Authenticated:
+ * - Stats summary bar (total evals, avg score, best score)
+ * - Score trend chart (Recharts area chart)
+ * - Recent evaluations table with quick-links
+ * - Feature cards (collapsed to 1 row)
  */
 
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import {
   Box,
   Button,
   Card,
   CardContent,
+  Chip,
   Grid,
+  Paper,
+  Skeleton,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   Typography,
 } from "@mui/material";
 import RateReviewIcon from "@mui/icons-material/RateReview";
@@ -22,6 +40,35 @@ import QuizIcon from "@mui/icons-material/Quiz";
 import TimerIcon from "@mui/icons-material/Timer";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import AssessmentIcon from "@mui/icons-material/Assessment";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import HistoryIcon from "@mui/icons-material/History";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
+
+import { useAuth } from "../hooks/useAuth";
+import {
+  getDashboardStats,
+  getRecentEvaluations,
+  getScoreHistory,
+  DashboardStats,
+  RecentEvaluation,
+  ScoreDataPoint,
+} from "../api/client";
+
+// ---------------------------------------------------------------------------
+// Static data
+// ---------------------------------------------------------------------------
 
 const features = [
   {
@@ -90,13 +137,28 @@ const steps = [
   },
 ];
 
+// Chart colors per dimension
+const CHART_COLORS: Record<string, string> = {
+  average: "#1a365d",   // navy — primary theme color
+  situation: "#38a169", // green
+  task: "#3182ce",      // blue
+  action: "#d69e2e",    // amber
+  result: "#805ad5",    // purple
+  engagement: "#e53e3e", // red
+};
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   return (
     <Box sx={{ maxWidth: 960, mx: "auto" }}>
       {/* Hero */}
-      <Box sx={{ mb: 4 }}>
+      <Box sx={{ mb: 3 }}>
         <Typography variant="h4" gutterBottom fontWeight={700}>
           Welcome to BIAE
         </Typography>
@@ -104,6 +166,9 @@ export default function Dashboard() {
           AI-powered STAR answer coaching for tech interview preparation
         </Typography>
       </Box>
+
+      {/* Authenticated users see personalized dashboard */}
+      {isAuthenticated && <AuthenticatedDashboard />}
 
       {/* Feature cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -154,34 +219,364 @@ export default function Dashboard() {
         ))}
       </Grid>
 
-      {/* How It Works */}
-      <Card>
-        <CardContent sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom fontWeight={600}>
-            How It Works
-          </Typography>
-          <Grid container spacing={2}>
-            {steps.map((s) => (
-              <Grid item xs={12} sm={6} md={4} key={s.num}>
-                <Stack direction="row" spacing={1.5} alignItems="flex-start">
-                  <CheckCircleOutlineIcon
-                    color="secondary"
-                    sx={{ mt: 0.3, flexShrink: 0 }}
-                  />
-                  <Box>
-                    <Typography variant="subtitle2" fontWeight={600}>
-                      {s.num}. {s.title}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {s.desc}
-                    </Typography>
-                  </Box>
-                </Stack>
-              </Grid>
-            ))}
-          </Grid>
-        </CardContent>
-      </Card>
+      {/* How It Works — only for unauthenticated users (they already know) */}
+      {!isAuthenticated && (
+        <Card>
+          <CardContent sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom fontWeight={600}>
+              How It Works
+            </Typography>
+            <Grid container spacing={2}>
+              {steps.map((s) => (
+                <Grid item xs={12} sm={6} md={4} key={s.num}>
+                  <Stack direction="row" spacing={1.5} alignItems="flex-start">
+                    <CheckCircleOutlineIcon
+                      color="secondary"
+                      sx={{ mt: 0.3, flexShrink: 0 }}
+                    />
+                    <Box>
+                      <Typography variant="subtitle2" fontWeight={600}>
+                        {s.num}. {s.title}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {s.desc}
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </Grid>
+              ))}
+            </Grid>
+          </CardContent>
+        </Card>
+      )}
     </Box>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Authenticated Dashboard — stats, chart, recent evaluations
+// ---------------------------------------------------------------------------
+
+function AuthenticatedDashboard() {
+  const {
+    data: stats,
+    isLoading: statsLoading,
+  } = useQuery({
+    queryKey: ["dashboard-stats"],
+    queryFn: getDashboardStats,
+    staleTime: 60_000,
+  });
+
+  const {
+    data: recent,
+    isLoading: recentLoading,
+  } = useQuery({
+    queryKey: ["dashboard-recent"],
+    queryFn: () => getRecentEvaluations(8),
+    staleTime: 60_000,
+  });
+
+  const {
+    data: scoreHistory,
+    isLoading: historyLoading,
+  } = useQuery({
+    queryKey: ["dashboard-score-history"],
+    queryFn: () => getScoreHistory(30),
+    staleTime: 60_000,
+  });
+
+  return (
+    <>
+      {/* Stats Summary */}
+      <StatsBar stats={stats ?? null} loading={statsLoading} />
+
+      {/* Score Trend Chart */}
+      {(historyLoading || (scoreHistory && scoreHistory.length > 1)) && (
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom fontWeight={600}>
+              <TrendingUpIcon
+                sx={{ mr: 1, verticalAlign: "middle", fontSize: 22 }}
+              />
+              Score Trend
+            </Typography>
+            {historyLoading ? (
+              <Skeleton variant="rectangular" height={260} />
+            ) : (
+              <ScoreTrendChart data={scoreHistory!} />
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recent Evaluations */}
+      {(recentLoading || (recent && recent.length > 0)) && (
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom fontWeight={600}>
+              <HistoryIcon
+                sx={{ mr: 1, verticalAlign: "middle", fontSize: 22 }}
+              />
+              Recent Evaluations
+            </Typography>
+            {recentLoading ? (
+              <Stack spacing={1}>
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} variant="rectangular" height={40} />
+                ))}
+              </Stack>
+            ) : (
+              <RecentEvaluationsTable evaluations={recent!} />
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Stats Bar
+// ---------------------------------------------------------------------------
+
+function StatsBar({
+  stats,
+  loading,
+}: {
+  stats: DashboardStats | null;
+  loading: boolean;
+}) {
+  const statCards = [
+    {
+      icon: <AssessmentIcon sx={{ fontSize: 28, color: "primary.main" }} />,
+      label: "Total Evaluations",
+      value: stats?.total_evaluations ?? 0,
+    },
+    {
+      icon: <TrendingUpIcon sx={{ fontSize: 28, color: "secondary.main" }} />,
+      label: "Average Score",
+      value: stats?.average_score != null ? `${stats.average_score}/5` : "—",
+    },
+    {
+      icon: <EmojiEventsIcon sx={{ fontSize: 28, color: "warning.main" }} />,
+      label: "Best Score",
+      value: stats?.best_score != null ? `${stats.best_score}/5` : "—",
+    },
+    {
+      icon: <HistoryIcon sx={{ fontSize: 28, color: "info.main" }} />,
+      label: "This Month",
+      value: stats?.evaluations_this_month ?? 0,
+    },
+  ];
+
+  return (
+    <Grid container spacing={2} sx={{ mb: 3 }}>
+      {statCards.map((s) => (
+        <Grid item xs={6} sm={3} key={s.label}>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2,
+              textAlign: "center",
+              border: 1,
+              borderColor: "divider",
+              borderRadius: 2,
+            }}
+          >
+            {loading ? (
+              <Skeleton variant="rectangular" height={60} />
+            ) : (
+              <>
+                <Box sx={{ mb: 0.5 }}>{s.icon}</Box>
+                <Typography variant="h5" fontWeight={700}>
+                  {s.value}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {s.label}
+                </Typography>
+              </>
+            )}
+          </Paper>
+        </Grid>
+      ))}
+    </Grid>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Score Trend Chart
+// ---------------------------------------------------------------------------
+
+function ScoreTrendChart({ data }: { data: ScoreDataPoint[] }) {
+  // Format dates for the x-axis
+  const chartData = data.map((d) => ({
+    ...d,
+    label: new Date(d.date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    }),
+  }));
+
+  return (
+    <ResponsiveContainer width="100%" height={260}>
+      <AreaChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+        <XAxis dataKey="label" tick={{ fontSize: 12 }} />
+        <YAxis domain={[0, 5]} tick={{ fontSize: 12 }} />
+        <Tooltip
+          contentStyle={{ fontSize: 13 }}
+          labelFormatter={(label) => `Date: ${label}`}
+        />
+        <Legend wrapperStyle={{ fontSize: 12 }} />
+        <Area
+          type="monotone"
+          dataKey="average"
+          name="Average"
+          stroke={CHART_COLORS.average}
+          fill={CHART_COLORS.average}
+          fillOpacity={0.15}
+          strokeWidth={2.5}
+          dot={{ r: 3 }}
+        />
+        <Area
+          type="monotone"
+          dataKey="situation"
+          name="Situation"
+          stroke={CHART_COLORS.situation}
+          fill={CHART_COLORS.situation}
+          fillOpacity={0.05}
+          strokeWidth={1.5}
+          dot={false}
+        />
+        <Area
+          type="monotone"
+          dataKey="action"
+          name="Action"
+          stroke={CHART_COLORS.action}
+          fill={CHART_COLORS.action}
+          fillOpacity={0.05}
+          strokeWidth={1.5}
+          dot={false}
+        />
+        <Area
+          type="monotone"
+          dataKey="result"
+          name="Result"
+          stroke={CHART_COLORS.result}
+          fill={CHART_COLORS.result}
+          fillOpacity={0.05}
+          strokeWidth={1.5}
+          dot={false}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Recent Evaluations Table
+// ---------------------------------------------------------------------------
+
+function scoreColor(score: number | null): string {
+  if (score === null) return "text.secondary";
+  if (score >= 4) return "success.main";
+  if (score >= 3) return "warning.main";
+  return "error.main";
+}
+
+function RecentEvaluationsTable({
+  evaluations,
+}: {
+  evaluations: RecentEvaluation[];
+}) {
+  const navigate = useNavigate();
+
+  return (
+    <TableContainer>
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell sx={{ fontWeight: 600 }}>Question</TableCell>
+            <TableCell sx={{ fontWeight: 600 }}>Company</TableCell>
+            <TableCell sx={{ fontWeight: 600 }}>Role</TableCell>
+            <TableCell align="center" sx={{ fontWeight: 600 }}>
+              Score
+            </TableCell>
+            <TableCell align="center" sx={{ fontWeight: 600 }}>
+              Status
+            </TableCell>
+            <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
+            <TableCell />
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {evaluations.map((ev) => (
+            <TableRow
+              key={ev.evaluation_id}
+              hover
+              sx={{ cursor: "pointer" }}
+              onClick={() => navigate(`/evaluations/${ev.evaluation_id}`)}
+            >
+              <TableCell sx={{ maxWidth: 240 }}>
+                <Typography variant="body2" noWrap>
+                  {ev.question_text || "Custom question"}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Typography variant="body2">{ev.company_name}</Typography>
+              </TableCell>
+              <TableCell>
+                <Typography variant="body2">{ev.target_role}</Typography>
+              </TableCell>
+              <TableCell align="center">
+                {ev.average_score != null ? (
+                  <Typography
+                    variant="body2"
+                    fontWeight={600}
+                    color={scoreColor(ev.average_score)}
+                  >
+                    {ev.average_score}
+                  </Typography>
+                ) : (
+                  "—"
+                )}
+              </TableCell>
+              <TableCell align="center">
+                <Chip
+                  label={ev.status}
+                  size="small"
+                  color={
+                    ev.status === "completed"
+                      ? "success"
+                      : ev.status === "failed"
+                      ? "error"
+                      : "primary"
+                  }
+                  variant="outlined"
+                  sx={{ height: 22, fontSize: 11 }}
+                />
+              </TableCell>
+              <TableCell>
+                <Typography variant="caption" color="text.secondary">
+                  {new Date(ev.created_at).toLocaleDateString()}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Button
+                  size="small"
+                  startIcon={<VisibilityIcon />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/evaluations/${ev.evaluation_id}`);
+                  }}
+                >
+                  View
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
   );
 }
