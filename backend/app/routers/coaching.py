@@ -20,7 +20,7 @@ Both:
 from datetime import datetime, timezone
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -32,6 +32,11 @@ from app.models import (
     CoachingRelationship,
     Evaluation,
     User,
+)
+from app.services.email import (
+    coaching_accepted_email,
+    coaching_invite_email,
+    send_email,
 )
 from app.schemas.coaching import (
     CoachDashboardResponse,
@@ -76,6 +81,7 @@ def _build_relationship_response(
 @router.post("/invite", response_model=CoachingRelationshipResponse, status_code=201)
 async def invite_student(
     request: InviteStudentRequest,
+    background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -124,6 +130,12 @@ async def invite_student(
     db.add(rel)
     await db.commit()
     await db.refresh(rel)
+
+    # Send coaching invite email (respects notification preferences)
+    should_email = not student or getattr(student, "email_notifications", True)
+    if should_email:
+        subject, html = coaching_invite_email(user.display_name, user.email)
+        background_tasks.add_task(send_email, request.email, subject, html)
 
     # Build response — student may be a placeholder if account doesn't exist
     return CoachingRelationshipResponse(
@@ -430,6 +442,7 @@ async def list_my_invites(
 @router.post("/invites/{invite_id}/accept", response_model=CoachingRelationshipResponse)
 async def accept_invite(
     invite_id: UUID,
+    background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -460,6 +473,11 @@ async def accept_invite(
     # Load coach for response
     coach_result = await db.execute(select(User).where(User.id == rel.coach_id))
     coach = coach_result.scalar_one()
+
+    # Notify coach that student accepted
+    if getattr(coach, "email_notifications", True):
+        subject, html = coaching_accepted_email(user.display_name, user.email)
+        background_tasks.add_task(send_email, coach.email, subject, html)
 
     return _build_relationship_response(rel, coach, user)
 

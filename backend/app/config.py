@@ -74,6 +74,13 @@ class Settings(BaseSettings):
     FREE_EVALUATIONS_PER_MONTH: int = 5
     PRO_EVALUATIONS_PER_MONTH: int = 999  # effectively unlimited
 
+    # --- Email (optional — empty SMTP_HOST enables dev/log mode) ---
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    FROM_EMAIL: str = "noreply@biae.app"
+
     # --- Rate Limiting ---
     RATE_LIMIT_ENABLED: bool = True
 

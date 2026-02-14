@@ -142,6 +142,7 @@ class User(Base):
     evaluations_this_month = Column(Integer, default=0)
     plan_tier = Column(String(20), default="free")  # free, pro
     is_moderator = Column(Boolean, default=False)  # Can review community submissions
+    email_notifications = Column(Boolean, default=True)  # Opt-out for email notifications
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     last_login = Column(DateTime(timezone=True))
     is_active = Column(Boolean, default=True)

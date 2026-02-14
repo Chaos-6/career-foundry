@@ -17,13 +17,18 @@ from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.dependencies import get_current_user, get_moderator
 from app.models import Question, User
+from app.services.email import (
+    question_approved_email,
+    question_rejected_email,
+    send_email,
+)
 from app.schemas.questions import (
     ModerationActionRequest,
     QuestionListResponse,
@@ -245,6 +250,7 @@ async def list_pending_questions(
 async def moderate_question(
     question_id: UUID,
     request: ModerationActionRequest,
+    background_tasks: BackgroundTasks,
     moderator: User = Depends(get_moderator),
     db: AsyncSession = Depends(get_db),
 ):
@@ -284,9 +290,21 @@ async def moderate_question(
     # Build response with submitter email
     resp = QuestionModerationResponse.model_validate(question)
     if question.submitted_by_user_id:
-        user_result = await db.execute(
-            select(User.email).where(User.id == question.submitted_by_user_id)
+        submitter_result = await db.execute(
+            select(User).where(User.id == question.submitted_by_user_id)
         )
-        resp.submitted_by_email = user_result.scalar_one_or_none()
+        submitter = submitter_result.scalar_one_or_none()
+        if submitter:
+            resp.submitted_by_email = submitter.email
+
+            # Send notification email to submitter
+            if getattr(submitter, "email_notifications", True):
+                if request.action == "approve":
+                    subject, html = question_approved_email(question.question_text)
+                else:
+                    subject, html = question_rejected_email(
+                        question.question_text, request.notes or ""
+                    )
+                background_tasks.add_task(send_email, submitter.email, subject, html)
 
     return resp
