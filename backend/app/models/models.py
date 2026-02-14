@@ -255,6 +255,10 @@ class Evaluation(Base):
     # Coach feedback
     coach_notes = Column(JSONB)  # {notes: str, focus_areas: [str], coach_id: str}
 
+    # Sharing — nullable UUID token; set when user shares the evaluation
+    share_token = Column(UUID(as_uuid=True), unique=True, nullable=True, index=True)
+    shared_at = Column(DateTime(timezone=True), nullable=True)
+
     # Metadata
     model_used = Column(String(100))
     input_tokens = Column(Integer)

@@ -234,6 +234,8 @@ export interface Evaluation {
   output_tokens: number | null;
   processing_seconds: number | null;
   error_message: string | null;
+  share_token: string | null;
+  shared_at: string | null;
   created_at: string;
 }
 
@@ -590,6 +592,52 @@ export async function getEvaluation(id: string): Promise<Evaluation> {
 
 export function getEvaluationPdfUrl(id: string): string {
   return `${API_BASE}/api/v1/evaluations/${id}/report/pdf`;
+}
+
+// Sharing
+export interface ShareResponse {
+  share_token: string;
+  share_url: string;
+}
+
+export interface SharedEvaluation {
+  company_name: string | null;
+  target_role: string | null;
+  question_text: string | null;
+  situation_score: number | null;
+  task_score: number | null;
+  action_score: number | null;
+  result_score: number | null;
+  engagement_score: number | null;
+  overall_score: number | null;
+  average_score: number | null;
+  evaluation_markdown: string | null;
+  evaluation_sections: Record<string, any> | null;
+  company_alignment: Record<string, any> | null;
+  follow_up_questions: Array<Record<string, any>> | null;
+  created_at: string;
+}
+
+export async function shareEvaluation(
+  evaluationId: string
+): Promise<ShareResponse> {
+  const { data } = await api.post<ShareResponse>(
+    `/api/v1/evaluations/${evaluationId}/share`
+  );
+  return data;
+}
+
+export async function revokeShare(evaluationId: string): Promise<void> {
+  await api.delete(`/api/v1/evaluations/${evaluationId}/share`);
+}
+
+export async function getSharedEvaluation(
+  token: string
+): Promise<SharedEvaluation> {
+  const { data } = await api.get<SharedEvaluation>(
+    `/api/v1/evaluations/shared/${token}`
+  );
+  return data;
 }
 
 // ---------------------------------------------------------------------------

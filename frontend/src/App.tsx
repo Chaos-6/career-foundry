@@ -12,6 +12,7 @@
  * - /moderation       Moderation Queue (protected — moderator-only API)
  * - /coaching         Coach Dashboard (protected — invite/manage students)
  * - /analytics        Advanced Analytics (protected)
+ * - /shared/:token    Shared evaluation (public, read-only)
  * - /pricing          Pricing/Plans (public)
  * - /billing/success  Post-checkout success (protected)
  *
@@ -39,6 +40,7 @@ import Analytics from "./pages/Analytics";
 import PricingPage from "./pages/PricingPage";
 import ModerationQueue from "./pages/ModerationQueue";
 import CoachDashboard from "./pages/CoachDashboard";
+import SharedEvaluation from "./pages/SharedEvaluation";
 
 function App() {
   return (
@@ -53,6 +55,7 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/questions" element={<QuestionBank />} />
           <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/shared/:token" element={<SharedEvaluation />} />
           <Route
             path="/billing/success"
             element={

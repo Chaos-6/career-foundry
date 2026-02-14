@@ -13,6 +13,8 @@ Tier enforcement:
   Anonymous users (no auth) are not allowed to create evaluations.
 """
 
+import uuid
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 
@@ -26,7 +28,12 @@ from app.config import settings
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import Answer, AnswerVersion, CompanyProfile, Evaluation, Question, User
-from app.schemas.evaluations import EvaluationCreateRequest, EvaluationResponse
+from app.schemas.evaluations import (
+    EvaluationCreateRequest,
+    EvaluationResponse,
+    ShareResponse,
+    SharedEvaluationResponse,
+)
 from app.services.evaluation_pipeline import run_evaluation_pipeline
 from app.rate_limit import rate_limit
 from app.services.pdf_report import PDFReportGenerator
@@ -221,3 +228,154 @@ async def download_evaluation_pdf(
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+# ---------------------------------------------------------------------------
+# Sharing endpoints
+# ---------------------------------------------------------------------------
+
+
+@router.post("/{evaluation_id}/share", response_model=ShareResponse)
+async def share_evaluation(
+    evaluation_id: UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Generate a shareable link for an evaluation.
+
+    Creates a unique share token if one doesn't already exist.
+    The shared view is read-only and excludes sensitive data
+    (answer text, coach notes, user info).
+    """
+    result = await db.execute(
+        select(Evaluation).where(Evaluation.id == evaluation_id)
+    )
+    evaluation = result.scalar_one_or_none()
+
+    if not evaluation:
+        raise HTTPException(status_code=404, detail="Evaluation not found")
+
+    if evaluation.status != "completed":
+        raise HTTPException(
+            status_code=400,
+            detail="Only completed evaluations can be shared.",
+        )
+
+    # Verify ownership: the evaluation's answer must belong to this user
+    version_result = await db.execute(
+        select(AnswerVersion).where(AnswerVersion.id == evaluation.answer_version_id)
+    )
+    version = version_result.scalar_one_or_none()
+    if version:
+        answer_result = await db.execute(
+            select(Answer).where(Answer.id == version.answer_id)
+        )
+        answer = answer_result.scalar_one_or_none()
+        if answer and answer.user_id and answer.user_id != user.id:
+            raise HTTPException(status_code=403, detail="You can only share your own evaluations.")
+
+    # Generate token if not already shared
+    if not evaluation.share_token:
+        evaluation.share_token = uuid.uuid4()
+        evaluation.shared_at = datetime.now(timezone.utc)
+        await db.commit()
+        await db.refresh(evaluation)
+
+    share_url = f"{settings.FRONTEND_URL}/shared/{evaluation.share_token}"
+
+    return ShareResponse(
+        share_token=str(evaluation.share_token),
+        share_url=share_url,
+    )
+
+
+@router.delete("/{evaluation_id}/share", status_code=204)
+async def revoke_share(
+    evaluation_id: UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Revoke a shared evaluation link.
+
+    Clears the share token so the public URL stops working immediately.
+    """
+    result = await db.execute(
+        select(Evaluation).where(Evaluation.id == evaluation_id)
+    )
+    evaluation = result.scalar_one_or_none()
+
+    if not evaluation:
+        raise HTTPException(status_code=404, detail="Evaluation not found")
+
+    # Verify ownership
+    version_result = await db.execute(
+        select(AnswerVersion).where(AnswerVersion.id == evaluation.answer_version_id)
+    )
+    version = version_result.scalar_one_or_none()
+    if version:
+        answer_result = await db.execute(
+            select(Answer).where(Answer.id == version.answer_id)
+        )
+        answer = answer_result.scalar_one_or_none()
+        if answer and answer.user_id and answer.user_id != user.id:
+            raise HTTPException(status_code=403, detail="You can only manage your own evaluations.")
+
+    evaluation.share_token = None
+    evaluation.shared_at = None
+    await db.commit()
+
+
+@router.get(
+    "/shared/{share_token}",
+    response_model=SharedEvaluationResponse,
+)
+async def get_shared_evaluation(
+    share_token: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """Public endpoint — view a shared evaluation by its token.
+
+    No authentication required. Returns a read-only subset of the
+    evaluation data (scores + feedback, no answer text or user info).
+    """
+    result = await db.execute(
+        select(Evaluation).where(Evaluation.share_token == share_token)
+    )
+    evaluation = result.scalar_one_or_none()
+
+    if not evaluation:
+        raise HTTPException(status_code=404, detail="Shared evaluation not found or link expired.")
+
+    if evaluation.status != "completed":
+        raise HTTPException(status_code=404, detail="This evaluation is not available.")
+
+    # Build response with context (company, role, question) but no user info
+    response = SharedEvaluationResponse.model_validate(evaluation)
+
+    # Load context: answer version → answer → company + question
+    version_result = await db.execute(
+        select(AnswerVersion).where(AnswerVersion.id == evaluation.answer_version_id)
+    )
+    version = version_result.scalar_one_or_none()
+    if version:
+        answer_result = await db.execute(
+            select(Answer)
+            .where(Answer.id == version.answer_id)
+            .options(selectinload(Answer.company))
+        )
+        answer = answer_result.scalar_one_or_none()
+        if answer:
+            response.company_name = answer.company.name if answer.company else None
+            response.target_role = answer.target_role
+
+            # Get question text
+            question_text = answer.custom_question_text
+            if answer.question_id and not question_text:
+                q_result = await db.execute(
+                    select(Question).where(Question.id == answer.question_id)
+                )
+                question = q_result.scalar_one_or_none()
+                question_text = question.question_text if question else None
+            response.question_text = question_text
+
+    return response

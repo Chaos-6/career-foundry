@@ -34,10 +34,13 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import CheckIcon from "@mui/icons-material/Check";
 import DownloadIcon from "@mui/icons-material/Download";
 import EditIcon from "@mui/icons-material/Edit";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import LinkOffIcon from "@mui/icons-material/LinkOff";
 import SendIcon from "@mui/icons-material/Send";
+import ShareIcon from "@mui/icons-material/Share";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
 import CloseIcon from "@mui/icons-material/Close";
 
@@ -46,6 +49,8 @@ import {
   getEvaluationPdfUrl,
   createVersion,
   createEvaluation,
+  shareEvaluation,
+  revokeShare,
 } from "../api/client";
 import ScoreBar from "../components/ScoreBar";
 import SimpleMarkdown from "../components/SimpleMarkdown";
@@ -67,10 +72,16 @@ export default function EvaluationDetail() {
     limit?: number;
   }>({});
 
+  // Share state
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [sharing, setSharing] = useState(false);
+  const [copied, setCopied] = useState(false);
+
   const {
     data: evaluation,
     isLoading,
     error,
+    refetch,
   } = useQuery({
     queryKey: ["evaluation", id],
     queryFn: () => getEvaluation(id!),
@@ -141,6 +152,45 @@ export default function EvaluationDetail() {
       setRevisionError(msg);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Share or copy existing share link
+  const handleShare = async () => {
+    if (!evaluation) return;
+
+    // If already shared, just copy the URL
+    if (shareUrl) {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      return;
+    }
+
+    setSharing(true);
+    try {
+      const result = await shareEvaluation(evaluation.id);
+      setShareUrl(result.share_url);
+      await navigator.clipboard.writeText(result.share_url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      refetch(); // refresh to show share_token in evaluation data
+    } catch {
+      // Silently fail — the button will remain available to retry
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  // Revoke sharing
+  const handleRevokeShare = async () => {
+    if (!evaluation) return;
+    try {
+      await revokeShare(evaluation.id);
+      setShareUrl(null);
+      refetch();
+    } catch {
+      // Silently fail
     }
   };
 
@@ -292,6 +342,39 @@ export default function EvaluationDetail() {
           >
             PDF
           </Button>
+          <Button
+            variant={shareUrl || evaluation.share_token ? "contained" : "outlined"}
+            color={copied ? "success" : "primary"}
+            startIcon={
+              sharing ? (
+                <CircularProgress size={18} color="inherit" />
+              ) : copied ? (
+                <CheckIcon />
+              ) : (
+                <ShareIcon />
+              )
+            }
+            onClick={handleShare}
+            disabled={sharing}
+          >
+            {copied
+              ? "Copied!"
+              : shareUrl || evaluation.share_token
+              ? "Copy Link"
+              : "Share"}
+          </Button>
+          {(shareUrl || evaluation.share_token) && (
+            <Button
+              variant="text"
+              size="small"
+              startIcon={<LinkOffIcon />}
+              onClick={handleRevokeShare}
+              color="error"
+              sx={{ minWidth: "auto" }}
+            >
+              Revoke
+            </Button>
+          )}
         </Stack>
       </Stack>
 
