@@ -74,6 +74,9 @@ class Settings(BaseSettings):
     FREE_EVALUATIONS_PER_MONTH: int = 5
     PRO_EVALUATIONS_PER_MONTH: int = 999  # effectively unlimited
 
+    # --- Rate Limiting ---
+    RATE_LIMIT_ENABLED: bool = True
+
     # --- Application ---
     APP_ENV: str = "development"
     DEBUG: bool = True

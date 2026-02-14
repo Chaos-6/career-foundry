@@ -18,6 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.database import init_db
+from app.rate_limit import RateLimitMiddleware
 
 # IMPORTANT: Import models so SQLAlchemy registers them with Base.metadata
 # before init_db() calls create_all(). Without this, no tables get created.
@@ -71,6 +72,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# --- Rate Limiting Middleware ---
+# Global per-IP limit: 100 requests/min for all endpoints.
+# Expensive endpoints (evaluations, generation) get tighter per-route limits
+# via the rate_limit() dependency in their routers.
+app.add_middleware(RateLimitMiddleware, requests_per_minute=100)
 
 
 # --- Register Routers ---

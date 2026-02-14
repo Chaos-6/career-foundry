@@ -28,12 +28,19 @@ from app.dependencies import get_current_user
 from app.models import Answer, AnswerVersion, CompanyProfile, Evaluation, Question, User
 from app.schemas.evaluations import EvaluationCreateRequest, EvaluationResponse
 from app.services.evaluation_pipeline import run_evaluation_pipeline
+from app.rate_limit import rate_limit
 from app.services.pdf_report import PDFReportGenerator
 
 router = APIRouter(prefix="/api/v1/evaluations", tags=["evaluations"])
 
 
-@router.post("", response_model=EvaluationResponse, status_code=201)
+# 10 evaluations per minute — each one triggers a Claude API call
+@router.post(
+    "",
+    response_model=EvaluationResponse,
+    status_code=201,
+    dependencies=[Depends(rate_limit(max_requests=10, window_seconds=60))],
+)
 async def create_evaluation(
     request: EvaluationCreateRequest,
     background_tasks: BackgroundTasks,

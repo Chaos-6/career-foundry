@@ -24,6 +24,7 @@ from app.schemas.auth import (
     TokenResponse,
     UserResponse,
 )
+from app.rate_limit import rate_limit
 from app.services.auth import (
     create_access_token,
     create_refresh_token,
@@ -35,7 +36,13 @@ from app.services.auth import (
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-@router.post("/register", response_model=TokenResponse, status_code=201)
+# 5 register attempts per minute per IP — prevents mass account creation
+@router.post(
+    "/register",
+    response_model=TokenResponse,
+    status_code=201,
+    dependencies=[Depends(rate_limit(max_requests=5, window_seconds=60))],
+)
 async def register(request: RegisterRequest, db: AsyncSession = Depends(get_db)):
     """Create a new user account and return tokens."""
     # Check if email already exists
@@ -68,7 +75,12 @@ async def register(request: RegisterRequest, db: AsyncSession = Depends(get_db))
     )
 
 
-@router.post("/login", response_model=TokenResponse)
+# 10 login attempts per minute per IP — prevents brute force
+@router.post(
+    "/login",
+    response_model=TokenResponse,
+    dependencies=[Depends(rate_limit(max_requests=10, window_seconds=60))],
+)
 async def login(request: LoginRequest, db: AsyncSession = Depends(get_db)):
     """Authenticate with email/password and return tokens."""
     result = await db.execute(

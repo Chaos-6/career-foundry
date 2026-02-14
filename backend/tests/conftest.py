@@ -22,8 +22,12 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 
+from app.config import settings
 from app.database import AsyncSessionLocal, Base, engine
 from app.main import app
+
+# Disable rate limiting during tests — tests run many requests from the same IP
+settings.RATE_LIMIT_ENABLED = False
 from app.models import (
     Answer,
     AnswerVersion,

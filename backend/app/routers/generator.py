@@ -8,9 +8,10 @@ The generated answer can then be edited and submitted for evaluation.
 import asyncio
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from app.rate_limit import rate_limit
 from app.services.generator import AnswerGeneratorService
 
 router = APIRouter(prefix="/api/v1/generator", tags=["generator"])
@@ -40,7 +41,12 @@ class GenerateResponse(BaseModel):
     processing_seconds: int
 
 
-@router.post("", response_model=GenerateResponse)
+# 5 generations per minute — each one calls Claude API
+@router.post(
+    "",
+    response_model=GenerateResponse,
+    dependencies=[Depends(rate_limit(max_requests=5, window_seconds=60))],
+)
 async def generate_answer(request: GenerateRequest):
     """Generate a STAR-formatted answer from bullet-point inputs.
 
