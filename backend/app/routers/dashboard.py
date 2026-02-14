@@ -492,3 +492,127 @@ async def get_analytics(
         company_breakdowns=company_breakdowns,
         readiness=readiness,
     )
+
+
+# ---------------------------------------------------------------------------
+# Spaced Repetition — recommended practice questions
+# ---------------------------------------------------------------------------
+
+class RecommendedQuestion(BaseModel):
+    """A question recommended for practice based on weak scores.
+
+    Priority is calculated as: days_since_practice / best_score.
+    Lower scores + longer gaps = higher priority.
+    """
+
+    question_id: str | None
+    question_text: str
+    company_name: str
+    target_role: str
+    best_score: float
+    last_practiced: str  # ISO date
+    days_since_practice: int
+    priority: float  # Higher = more urgent to practice
+    answer_id: str
+
+
+@router.get("/recommended", response_model=list[RecommendedQuestion])
+async def get_recommended_questions(
+    limit: int = Query(default=5, ge=1, le=20),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get questions recommended for spaced repetition practice.
+
+    Returns questions where the user's best score is ≤ 3.5, prioritized
+    by staleness (days since last practice) and weakness (low score).
+
+    Algorithm:
+        priority = days_since_last_practice / best_average_score
+
+    This naturally surfaces questions that are both weak AND stale.
+    A score of 2.0 from 10 days ago (priority=5.0) ranks higher than
+    a score of 3.0 from 3 days ago (priority=1.0).
+    """
+    now = datetime.now(timezone.utc)
+
+    # Find answers with completed evaluations where best score ≤ 3.5
+    query = (
+        select(
+            Answer.id.label("answer_id"),
+            Answer.question_id,
+            Answer.custom_question_text,
+            Answer.target_role,
+            Answer.best_average_score,
+            CompanyProfile.name.label("company_name"),
+            func.max(Evaluation.created_at).label("last_eval_date"),
+        )
+        .join(AnswerVersion, AnswerVersion.answer_id == Answer.id)
+        .join(Evaluation, Evaluation.answer_version_id == AnswerVersion.id)
+        .join(CompanyProfile, Answer.target_company_id == CompanyProfile.id)
+        .where(
+            Answer.user_id == user.id,
+            Evaluation.status == "completed",
+            Answer.best_average_score <= 3.5,
+            Answer.best_average_score.isnot(None),
+        )
+        .group_by(
+            Answer.id,
+            Answer.question_id,
+            Answer.custom_question_text,
+            Answer.target_role,
+            Answer.best_average_score,
+            CompanyProfile.name,
+        )
+    )
+    result = await db.execute(query)
+    rows = result.all()
+
+    if not rows:
+        return []
+
+    # Batch-load question texts
+    question_ids = {r.question_id for r in rows if r.question_id}
+    question_map: dict[str, str] = {}
+    if question_ids:
+        q_result = await db.execute(
+            select(Question.id, Question.question_text).where(
+                Question.id.in_(question_ids)
+            )
+        )
+        question_map = {str(row.id): row.question_text for row in q_result.all()}
+
+    # Build recommendations with priority scores
+    recommendations = []
+    for row in rows:
+        q_text = row.custom_question_text
+        if not q_text and row.question_id:
+            q_text = question_map.get(str(row.question_id), "Unknown question")
+        if not q_text:
+            q_text = "Custom question"
+
+        best_score = float(row.best_average_score) if row.best_average_score else 1.0
+        last_eval = row.last_eval_date
+        days_since = (now - last_eval).days if last_eval else 30
+
+        # Priority: higher = more urgent
+        # Avoid division by zero; clamp score to minimum 0.5
+        priority = days_since / max(best_score, 0.5)
+
+        recommendations.append(
+            RecommendedQuestion(
+                question_id=str(row.question_id) if row.question_id else None,
+                question_text=q_text,
+                company_name=row.company_name,
+                target_role=row.target_role,
+                best_score=round(best_score, 1),
+                last_practiced=last_eval.isoformat() if last_eval else "",
+                days_since_practice=days_since,
+                priority=round(priority, 1),
+                answer_id=str(row.answer_id),
+            )
+        )
+
+    # Sort by priority (highest first) and return top N
+    recommendations.sort(key=lambda r: r.priority, reverse=True)
+    return recommendations[:limit]

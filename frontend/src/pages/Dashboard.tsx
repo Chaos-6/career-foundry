@@ -49,6 +49,8 @@ import StarIcon from "@mui/icons-material/Star";
 import HistoryIcon from "@mui/icons-material/History";
 import LockIcon from "@mui/icons-material/Lock";
 import LockOpenIcon from "@mui/icons-material/LockOpen";
+import ReplayIcon from "@mui/icons-material/Replay";
+import SchoolIcon from "@mui/icons-material/School";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import {
   AreaChart,
@@ -66,10 +68,12 @@ import {
   getDashboardStats,
   getRecentEvaluations,
   getScoreHistory,
+  getRecommendedQuestions,
   DashboardStats,
   BadgeInfo,
   StreakInfo,
   RecentEvaluation,
+  RecommendedQuestion,
   ScoreDataPoint,
 } from "../api/client";
 
@@ -302,6 +306,14 @@ function AuthenticatedDashboard() {
     staleTime: 60_000,
   });
 
+  const {
+    data: recommended,
+  } = useQuery({
+    queryKey: ["dashboard-recommended"],
+    queryFn: () => getRecommendedQuestions(5),
+    staleTime: 60_000,
+  });
+
   return (
     <>
       {/* Stats Summary */}
@@ -310,6 +322,11 @@ function AuthenticatedDashboard() {
       {/* Streak & Badges */}
       {!statsLoading && stats && (
         <StreakAndBadges streak={stats.streak} badges={stats.badges} />
+      )}
+
+      {/* Recommended for You (Spaced Repetition) */}
+      {recommended && recommended.length > 0 && (
+        <RecommendedForYou questions={recommended} />
       )}
 
       {/* Score Trend Chart */}
@@ -725,5 +742,90 @@ function StreakAndBadges({
         </Card>
       </Grid>
     </Grid>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Recommended for You (Spaced Repetition)
+// ---------------------------------------------------------------------------
+
+function RecommendedForYou({
+  questions,
+}: {
+  questions: RecommendedQuestion[];
+}) {
+  const navigate = useNavigate();
+
+  return (
+    <Card sx={{ mb: 3 }}>
+      <CardContent>
+        <Typography variant="h6" gutterBottom fontWeight={600}>
+          <SchoolIcon
+            sx={{ mr: 1, verticalAlign: "middle", fontSize: 22 }}
+          />
+          Recommended for You
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Questions where you scored ≤ 3.5, ordered by how long ago you
+          practiced. Focus on these to strengthen weak areas.
+        </Typography>
+        <Stack spacing={1.5}>
+          {questions.map((q) => (
+            <Paper
+              key={q.answer_id}
+              elevation={0}
+              sx={{
+                p: 2,
+                border: 1,
+                borderColor: "divider",
+                borderRadius: 2,
+                "&:hover": { borderColor: "primary.main", bgcolor: "action.hover" },
+                transition: "all 0.15s",
+              }}
+            >
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                justifyContent="space-between"
+                alignItems={{ xs: "flex-start", sm: "center" }}
+                spacing={1}
+              >
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography variant="body2" fontWeight={500} noWrap>
+                    {q.question_text}
+                  </Typography>
+                  <Stack direction="row" spacing={1} sx={{ mt: 0.5 }}>
+                    <Chip label={q.company_name} size="small" variant="outlined" />
+                    <Chip label={q.target_role} size="small" variant="outlined" />
+                    <Typography
+                      variant="caption"
+                      color={q.best_score <= 2.5 ? "error.main" : "warning.main"}
+                      fontWeight={600}
+                    >
+                      Score: {q.best_score}/5
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      · {q.days_since_practice}d ago
+                    </Typography>
+                  </Stack>
+                </Box>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<ReplayIcon />}
+                  onClick={() =>
+                    navigate("/evaluate", {
+                      state: { questionId: q.question_id },
+                    })
+                  }
+                  sx={{ flexShrink: 0 }}
+                >
+                  Practice Again
+                </Button>
+              </Stack>
+            </Paper>
+          ))}
+        </Stack>
+      </CardContent>
+    </Card>
   );
 }

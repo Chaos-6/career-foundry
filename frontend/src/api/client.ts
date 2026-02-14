@@ -722,6 +722,32 @@ export async function getScoreHistory(
 }
 
 // ---------------------------------------------------------------------------
+// Recommended Questions (Spaced Repetition)
+// ---------------------------------------------------------------------------
+
+export interface RecommendedQuestion {
+  question_id: string | null;
+  question_text: string;
+  company_name: string;
+  target_role: string;
+  best_score: number;
+  last_practiced: string;
+  days_since_practice: number;
+  priority: number;
+  answer_id: string;
+}
+
+export async function getRecommendedQuestions(
+  limit = 5
+): Promise<RecommendedQuestion[]> {
+  const { data } = await api.get<RecommendedQuestion[]>(
+    "/api/v1/dashboard/recommended",
+    { params: { limit } }
+  );
+  return data;
+}
+
+// ---------------------------------------------------------------------------
 // Analytics endpoints
 // ---------------------------------------------------------------------------
 
