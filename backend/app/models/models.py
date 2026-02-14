@@ -80,6 +80,11 @@ class Question(Base):
     - role_tags: ["MLE", "PM", "TPM", "EM"]
     - company_tags: ["Amazon", "Meta"]
     - competency_tags: ["conflict", "leadership", "technical_challenge"]
+
+    Community-submitted questions go through a moderation workflow:
+    - status: pending → approved / rejected
+    - Only "approved" questions appear in the public question bank
+    - Curated (seeded) questions default to "approved" for backwards compatibility
     """
 
     __tablename__ = "questions"
@@ -95,6 +100,12 @@ class Question(Base):
     usage_count = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # --- Moderation fields (community submissions) ---
+    status = Column(String(20), default="approved")  # pending, approved, rejected
+    submitted_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    moderation_notes = Column(Text)  # Reason for rejection
+    moderated_at = Column(DateTime(timezone=True))
 
 
 # ---------------------------------------------------------------------------
@@ -129,6 +140,7 @@ class User(Base):
     default_experience_level = Column(String(50))
     evaluations_this_month = Column(Integer, default=0)
     plan_tier = Column(String(20), default="free")  # free, pro
+    is_moderator = Column(Boolean, default=False)  # Can review community submissions
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     last_login = Column(DateTime(timezone=True))
     is_active = Column(Boolean, default=True)

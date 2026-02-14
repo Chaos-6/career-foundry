@@ -44,6 +44,7 @@ export interface AuthUser {
   default_experience_level: string | null;
   plan_tier: string;
   evaluations_this_month: number;
+  is_moderator: boolean;
 }
 
 interface AuthContextValue {

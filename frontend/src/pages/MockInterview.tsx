@@ -132,6 +132,7 @@ export default function MockInterview() {
           competency_tags: [],
           difficulty: "",
           level_band: null,
+          source: "curated",
           usage_count: 0,
         };
       } else {

@@ -34,13 +34,14 @@ import TimerIcon from "@mui/icons-material/Timer";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import InsightsIcon from "@mui/icons-material/Insights";
 import PaymentIcon from "@mui/icons-material/Payment";
+import GavelIcon from "@mui/icons-material/Gavel";
 import LoginIcon from "@mui/icons-material/Login";
 import LogoutIcon from "@mui/icons-material/Logout";
 import { useAuth } from "../hooks/useAuth";
 
 const DRAWER_WIDTH = 240;
 
-const navItems = [
+const BASE_NAV_ITEMS = [
   { path: "/", label: "Dashboard", icon: <DashboardIcon /> },
   { path: "/evaluate", label: "New Evaluation", icon: <RateReviewIcon /> },
   { path: "/mock", label: "Mock Interview", icon: <TimerIcon /> },
@@ -57,6 +58,21 @@ export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isAuthenticated, logout } = useAuth();
+
+  // Build nav items — moderators get an extra link
+  const navItems = React.useMemo(() => {
+    const items = [...BASE_NAV_ITEMS];
+    if (user?.is_moderator) {
+      // Insert moderation link after Question Bank
+      const qbIndex = items.findIndex((i) => i.path === "/questions");
+      items.splice(qbIndex + 1, 0, {
+        path: "/moderation",
+        label: "Moderation",
+        icon: <GavelIcon />,
+      });
+    }
+    return items;
+  }, [user?.is_moderator]);
 
   const handleLogout = () => {
     logout();

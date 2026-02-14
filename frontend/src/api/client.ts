@@ -175,6 +175,7 @@ export interface Question {
   competency_tags: string[];
   difficulty: string;
   level_band: string | null;
+  source: string;
   usage_count: number;
 }
 
@@ -256,6 +257,7 @@ export interface AuthUser {
   default_experience_level: string | null;
   plan_tier: string;
   evaluations_this_month: number;
+  is_moderator: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -332,6 +334,59 @@ export async function getRandomQuestion(params?: {
   const { data } = await api.get<Question>("/api/v1/questions/random", {
     params,
   });
+  return data;
+}
+
+// Community question submission
+export async function submitQuestion(payload: {
+  question_text: string;
+  role_tags?: string[];
+  company_tags?: string[];
+  competency_tags?: string[];
+  difficulty?: string;
+  level_band?: string;
+}): Promise<Question> {
+  const { data } = await api.post<Question>("/api/v1/questions", payload);
+  return data;
+}
+
+// Moderation types & endpoints
+export interface ModerationQuestion {
+  id: string;
+  question_text: string;
+  role_tags: string[];
+  company_tags: string[];
+  competency_tags: string[];
+  difficulty: string;
+  level_band: string | null;
+  source: string;
+  status: string;
+  submitted_by_user_id: string | null;
+  submitted_by_email: string | null;
+  moderation_notes: string | null;
+  moderated_at: string | null;
+  created_at: string | null;
+}
+
+export async function getPendingQuestions(
+  skip = 0,
+  limit = 50
+): Promise<ModerationQuestion[]> {
+  const { data } = await api.get<ModerationQuestion[]>(
+    "/api/v1/questions/moderation/pending",
+    { params: { skip, limit } }
+  );
+  return data;
+}
+
+export async function moderateQuestion(
+  questionId: string,
+  payload: { action: "approve" | "reject"; notes?: string }
+): Promise<ModerationQuestion> {
+  const { data } = await api.patch<ModerationQuestion>(
+    `/api/v1/questions/${questionId}/moderation`,
+    payload
+  );
   return data;
 }
 

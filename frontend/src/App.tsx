@@ -9,6 +9,7 @@
  * - /mock             Mock Interview (protected)
  * - /generator        AI Answer Generator (protected)
  * - /questions        Question Bank (public — browsing is free)
+ * - /moderation       Moderation Queue (protected — moderator-only API)
  * - /analytics        Advanced Analytics (protected)
  * - /pricing          Pricing/Plans (public)
  * - /billing/success  Post-checkout success (protected)
@@ -35,6 +36,7 @@ import QuestionBank from "./pages/QuestionBank";
 import VersionComparison from "./pages/VersionComparison";
 import Analytics from "./pages/Analytics";
 import PricingPage from "./pages/PricingPage";
+import ModerationQueue from "./pages/ModerationQueue";
 
 function App() {
   return (
@@ -104,6 +106,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <VersionComparison />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/moderation"
+            element={
+              <ProtectedRoute>
+                <ModerationQueue />
               </ProtectedRoute>
             }
           />

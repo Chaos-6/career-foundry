@@ -94,3 +94,19 @@ async def get_optional_user(
         select(User).where(User.id == UUID(user_id), User.is_active == True)  # noqa: E712
     )
     return result.scalar_one_or_none()
+
+
+async def get_moderator(
+    user: User = Depends(get_current_user),
+) -> User:
+    """Require the current user to be a moderator.
+
+    Raises 403 if the user exists but isn't a moderator.
+    Used by moderation queue endpoints.
+    """
+    if not user.is_moderator:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Moderator access required",
+        )
+    return user

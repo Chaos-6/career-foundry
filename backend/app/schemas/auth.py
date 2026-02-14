@@ -51,3 +51,4 @@ class UserResponse(BaseModel):
     default_experience_level: Optional[str] = None
     plan_tier: str
     evaluations_this_month: int
+    is_moderator: bool = False
