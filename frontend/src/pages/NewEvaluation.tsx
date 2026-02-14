@@ -44,6 +44,7 @@ import {
   Question,
 } from "../api/client";
 import UpgradePrompt, { isTierLimitError } from "../components/UpgradePrompt";
+import VoiceInput from "../components/VoiceInput";
 
 const ROLES = ["MLE", "PM", "TPM", "EM"];
 const LEVELS = [
@@ -367,21 +368,30 @@ export default function NewEvaluation() {
                 "Result: As a result..."
               }
             />
-            <Typography
-              variant="caption"
-              color={
-                wordCount < 50
-                  ? "error"
-                  : wordCount > 500
-                  ? "warning.main"
-                  : "text.secondary"
-              }
-              sx={{ mt: 1, display: "block" }}
-            >
-              {wordCount} words
-              {wordCount < 50 && " — aim for at least 100 words"}
-              {wordCount > 500 && " — consider trimming for interview delivery"}
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mt: 1 }}>
+              <VoiceInput
+                onTranscript={(text) =>
+                  setAnswerText((prev) =>
+                    prev ? prev.trimEnd() + " " + text : text
+                  )
+                }
+                disabled={submitMutation.isPending}
+              />
+              <Typography
+                variant="caption"
+                color={
+                  wordCount < 50
+                    ? "error"
+                    : wordCount > 500
+                    ? "warning.main"
+                    : "text.secondary"
+                }
+              >
+                {wordCount} words
+                {wordCount < 50 && " — aim for at least 100 words"}
+                {wordCount > 500 && " — consider trimming for interview delivery"}
+              </Typography>
+            </Box>
           </CardContent>
         </Card>
 

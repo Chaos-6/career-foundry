@@ -46,6 +46,7 @@ import {
   Question,
 } from "../api/client";
 import UpgradePrompt, { isTierLimitError } from "../components/UpgradePrompt";
+import VoiceInput from "../components/VoiceInput";
 
 const ROLES = ["MLE", "PM", "TPM", "EM"];
 const LEVELS = [
@@ -412,6 +413,14 @@ export default function MockInterview() {
       />
 
       <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+        <VoiceInput
+          onTranscript={(text) =>
+            setAnswerText((prev) =>
+              prev ? prev.trimEnd() + " " + text : text
+            )
+          }
+          disabled={phase === "submitting"}
+        />
         <Typography variant="body2" color="text.secondary">
           {wordCount} words
         </Typography>
