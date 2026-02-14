@@ -45,6 +45,7 @@ import {
   createEvaluation,
   Question,
 } from "../api/client";
+import UpgradePrompt, { isTierLimitError } from "../components/UpgradePrompt";
 
 const ROLES = ["MLE", "PM", "TPM", "EM"];
 const LEVELS = [
@@ -81,6 +82,11 @@ export default function MockInterview() {
   const [answerText, setAnswerText] = useState("");
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [error, setError] = useState("");
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [tierLimitInfo, setTierLimitInfo] = useState<{
+    currentUsage?: number;
+    limit?: number;
+  }>({});
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
@@ -194,7 +200,21 @@ export default function MockInterview() {
       // Navigate to results
       navigate(`/evaluations/${evaluation.id}`);
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Failed to submit answer");
+      const tierCheck = isTierLimitError(err);
+      if (tierCheck.isLimit) {
+        setTierLimitInfo({
+          currentUsage: tierCheck.currentUsage,
+          limit: tierCheck.limit,
+        });
+        setShowUpgrade(true);
+        return;
+      }
+      const detail = err.response?.data?.detail;
+      setError(
+        typeof detail === "string"
+          ? detail
+          : detail?.message || "Failed to submit answer"
+      );
       setPhase("active");
     }
   }, [phase, sessionId, question, answerText, companyId, role, level, navigate]);
@@ -410,6 +430,14 @@ export default function MockInterview() {
           {phase === "submitting" ? "Submitting..." : "Submit & Evaluate"}
         </Button>
       </Box>
+
+      {/* Upgrade prompt when tier limit is reached */}
+      <UpgradePrompt
+        open={showUpgrade}
+        onClose={() => setShowUpgrade(false)}
+        currentUsage={tierLimitInfo.currentUsage}
+        limit={tierLimitInfo.limit}
+      />
     </Box>
   );
 }

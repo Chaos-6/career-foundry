@@ -43,6 +43,7 @@ import {
   getAnswer,
   createEvaluation,
 } from "../api/client";
+import UpgradePrompt, { isTierLimitError } from "../components/UpgradePrompt";
 
 const ROLES = ["MLE", "PM", "TPM", "EM"];
 const LEVELS = [
@@ -81,6 +82,11 @@ export default function AnswerGenerator() {
     processing_seconds: number;
   } | null>(null);
   const [error, setError] = useState("");
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [tierLimitInfo, setTierLimitInfo] = useState<{
+    currentUsage?: number;
+    limit?: number;
+  }>({});
 
   const { data: companies } = useQuery({
     queryKey: ["companies"],
@@ -177,7 +183,21 @@ export default function AnswerGenerator() {
       const evaluation = await createEvaluation(versionId);
       navigate(`/evaluations/${evaluation.id}`);
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Failed to submit for evaluation");
+      const tierCheck = isTierLimitError(err);
+      if (tierCheck.isLimit) {
+        setTierLimitInfo({
+          currentUsage: tierCheck.currentUsage,
+          limit: tierCheck.limit,
+        });
+        setShowUpgrade(true);
+        return;
+      }
+      const detail = err.response?.data?.detail;
+      setError(
+        typeof detail === "string"
+          ? detail
+          : detail?.message || "Failed to submit for evaluation"
+      );
       setPhase("editing");
     }
   };
@@ -505,6 +525,14 @@ export default function AnswerGenerator() {
           </Box>
         </>
       )}
+
+      {/* Upgrade prompt when tier limit is reached */}
+      <UpgradePrompt
+        open={showUpgrade}
+        onClose={() => setShowUpgrade(false)}
+        currentUsage={tierLimitInfo.currentUsage}
+        limit={tierLimitInfo.limit}
+      />
     </Box>
   );
 }

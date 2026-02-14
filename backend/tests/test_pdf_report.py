@@ -157,13 +157,14 @@ async def test_pdf_download_not_found(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_pdf_download_incomplete_entry(
-    client: AsyncClient, test_answer_version
+    client: AsyncClient, test_answer_version, auth_headers
 ):
     """GET /report/pdf returns 400 for incomplete entry."""
     # Create a queued (incomplete) entry
     create_resp = await client.post(
         "/api/v1/evaluations",
         json={"answer_version_id": str(test_answer_version.id)},
+        headers=auth_headers,
     )
     entry_id = create_resp.json()["id"]
 

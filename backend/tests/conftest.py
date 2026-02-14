@@ -178,6 +178,19 @@ async def test_user(setup_db):
 
 
 @pytest_asyncio.fixture
+async def auth_headers(test_user):
+    """Generate a valid JWT Bearer token header for the test user.
+
+    This fixture creates a real access token using the app's auth service,
+    so it exercises the same code path as production. Avoids mocking.
+    """
+    from app.services.auth import create_access_token
+
+    token = create_access_token(str(test_user.id))
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest_asyncio.fixture
 async def test_answer(test_company, test_question):
     """Create a test answer with one version."""
     answer = Answer(

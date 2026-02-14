@@ -10,6 +10,8 @@
  * - /generator        AI Answer Generator (protected)
  * - /questions        Question Bank (public — browsing is free)
  * - /analytics        Advanced Analytics (protected)
+ * - /pricing          Pricing/Plans (public)
+ * - /billing/success  Post-checkout success (protected)
  *
  * Why some routes are public:
  *   The dashboard and question bank are discovery surfaces. Letting
@@ -32,6 +34,7 @@ import AnswerGenerator from "./pages/AnswerGenerator";
 import QuestionBank from "./pages/QuestionBank";
 import VersionComparison from "./pages/VersionComparison";
 import Analytics from "./pages/Analytics";
+import PricingPage from "./pages/PricingPage";
 
 function App() {
   return (
@@ -45,6 +48,15 @@ function App() {
           {/* Public routes */}
           <Route path="/" element={<Dashboard />} />
           <Route path="/questions" element={<QuestionBank />} />
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route
+            path="/billing/success"
+            element={
+              <ProtectedRoute>
+                <PricingPage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Protected routes — require authentication */}
           <Route

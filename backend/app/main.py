@@ -25,6 +25,7 @@ import app.models  # noqa: F401
 from app.routers import (
     answers,
     auth,
+    billing,
     companies,
     dashboard,
     evaluations,
@@ -74,6 +75,7 @@ app.add_middleware(
 # --- Register Routers ---
 app.include_router(auth.router)
 app.include_router(oauth.router)
+app.include_router(billing.router)
 app.include_router(companies.router)
 app.include_router(questions.router)
 app.include_router(answers.router)

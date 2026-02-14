@@ -33,6 +33,7 @@ import QuizIcon from "@mui/icons-material/Quiz";
 import TimerIcon from "@mui/icons-material/Timer";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import InsightsIcon from "@mui/icons-material/Insights";
+import PaymentIcon from "@mui/icons-material/Payment";
 import LoginIcon from "@mui/icons-material/Login";
 import LogoutIcon from "@mui/icons-material/Logout";
 import { useAuth } from "../hooks/useAuth";
@@ -46,6 +47,7 @@ const navItems = [
   { path: "/generator", label: "AI Generator", icon: <AutoAwesomeIcon /> },
   { path: "/questions", label: "Question Bank", icon: <QuizIcon /> },
   { path: "/analytics", label: "Analytics", icon: <InsightsIcon /> },
+  { path: "/pricing", label: "Pricing", icon: <PaymentIcon /> },
 ];
 
 export default function Layout() {

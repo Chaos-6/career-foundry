@@ -43,6 +43,7 @@ import {
   Company,
   Question,
 } from "../api/client";
+import UpgradePrompt, { isTierLimitError } from "../components/UpgradePrompt";
 
 const ROLES = ["MLE", "PM", "TPM", "EM"];
 const LEVELS = [
@@ -67,6 +68,11 @@ export default function NewEvaluation() {
   const [customQuestion, setCustomQuestion] = useState("");
   const [answerText, setAnswerText] = useState("");
   const [error, setError] = useState("");
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [tierLimitInfo, setTierLimitInfo] = useState<{
+    currentUsage?: number;
+    limit?: number;
+  }>({});
 
   // Data queries
   const { data: companies = [], isLoading: loadingCompanies } = useQuery({
@@ -127,8 +133,20 @@ export default function NewEvaluation() {
       navigate(`/evaluations/${evaluation.id}`);
     },
     onError: (err: any) => {
+      const tierCheck = isTierLimitError(err);
+      if (tierCheck.isLimit) {
+        setTierLimitInfo({
+          currentUsage: tierCheck.currentUsage,
+          limit: tierCheck.limit,
+        });
+        setShowUpgrade(true);
+        return;
+      }
+      const detail = err.response?.data?.detail;
       setError(
-        err.response?.data?.detail || "Failed to submit. Please try again."
+        typeof detail === "string"
+          ? detail
+          : detail?.message || "Failed to submit. Please try again."
       );
     },
   });
@@ -392,6 +410,14 @@ export default function NewEvaluation() {
           {submitMutation.isPending ? "Evaluating..." : "Evaluate My Answer"}
         </Button>
       </Stack>
+
+      {/* Upgrade prompt when tier limit is reached */}
+      <UpgradePrompt
+        open={showUpgrade}
+        onClose={() => setShowUpgrade(false)}
+        currentUsage={tierLimitInfo.currentUsage}
+        limit={tierLimitInfo.limit}
+      />
     </Box>
   );
 }

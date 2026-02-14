@@ -49,6 +49,7 @@ import {
 } from "../api/client";
 import ScoreBar from "../components/ScoreBar";
 import SimpleMarkdown from "../components/SimpleMarkdown";
+import UpgradePrompt, { isTierLimitError } from "../components/UpgradePrompt";
 
 export default function EvaluationDetail() {
   const { id } = useParams<{ id: string }>();
@@ -59,6 +60,11 @@ export default function EvaluationDetail() {
   const [revisedText, setRevisedText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [revisionError, setRevisionError] = useState<string | null>(null);
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [tierLimitInfo, setTierLimitInfo] = useState<{
+    currentUsage?: number;
+    limit?: number;
+  }>({});
 
   const {
     data: evaluation,
@@ -117,10 +123,20 @@ export default function EvaluationDetail() {
       // 3. Navigate to the new evaluation (will show polling → results)
       navigate(`/evaluations/${newEval.id}`, { replace: false });
     } catch (err: any) {
+      const tierCheck = isTierLimitError(err);
+      if (tierCheck.isLimit) {
+        setTierLimitInfo({
+          currentUsage: tierCheck.currentUsage,
+          limit: tierCheck.limit,
+        });
+        setShowUpgrade(true);
+        return;
+      }
+      const detail = err?.response?.data?.detail;
       const msg =
-        err?.response?.data?.detail ||
-        err?.message ||
-        "Failed to submit revision.";
+        typeof detail === "string"
+          ? detail
+          : detail?.message || err?.message || "Failed to submit revision.";
       setRevisionError(msg);
     } finally {
       setSubmitting(false);
@@ -531,6 +547,14 @@ export default function EvaluationDetail() {
             )}
         </Grid>
       </Grid>
+
+      {/* Upgrade prompt when tier limit is reached */}
+      <UpgradePrompt
+        open={showUpgrade}
+        onClose={() => setShowUpgrade(false)}
+        currentUsage={tierLimitInfo.currentUsage}
+        limit={tierLimitInfo.limit}
+      />
     </Box>
   );
 }

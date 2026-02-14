@@ -17,13 +17,14 @@ BIAE's pipeline is simpler: one Claude call, one parse, done.
 
 import asyncio
 import logging
+from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.database import AsyncSessionLocal
-from app.models import Answer, AnswerVersion, CompanyProfile, Evaluation
+from app.models import Answer, AnswerVersion, CompanyProfile, Evaluation, User
 from app.services.analysis import STARAnalysisService
 from app.services.score_parser import (
     parse_company_alignment,
@@ -35,7 +36,10 @@ from app.services.score_parser import (
 logger = logging.getLogger(__name__)
 
 
-async def run_evaluation_pipeline(evaluation_id: UUID) -> None:
+async def run_evaluation_pipeline(
+    evaluation_id: UUID,
+    user_id: Optional[UUID] = None,
+) -> None:
     """Run the full evaluation pipeline for an evaluation record.
 
     Manages its own AsyncSession since this runs outside the request
@@ -44,6 +48,8 @@ async def run_evaluation_pipeline(evaluation_id: UUID) -> None:
 
     Args:
         evaluation_id: UUID of the Evaluation record to process.
+        user_id: Optional UUID of the user — used to increment their
+                 monthly evaluation counter on success.
     """
     async with AsyncSessionLocal() as db:
         try:
@@ -168,6 +174,18 @@ async def run_evaluation_pipeline(evaluation_id: UUID) -> None:
                     or scores.average_score > answer.best_average_score
                 ):
                     answer.best_average_score = scores.average_score
+                    await db.commit()
+
+            # ----------------------------------------------------------
+            # 7. Increment user's monthly evaluation counter
+            # ----------------------------------------------------------
+            if user_id:
+                user_result = await db.execute(
+                    select(User).where(User.id == user_id)
+                )
+                user = user_result.scalar_one_or_none()
+                if user:
+                    user.evaluations_this_month = (user.evaluations_this_month or 0) + 1
                     await db.commit()
 
             logger.info(

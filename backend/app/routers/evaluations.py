@@ -6,8 +6,14 @@ as a background task. GET polls the evaluation status/results.
 
 The evaluation pipeline runs asynchronously — the frontend polls
 GET /evaluations/{id} until status transitions to 'completed' or 'failed'.
+
+Tier enforcement:
+  Free users get FREE_EVALUATIONS_PER_MONTH evaluations/month.
+  Pro users get PRO_EVALUATIONS_PER_MONTH (effectively unlimited).
+  Anonymous users (no auth) are not allowed to create evaluations.
 """
 
+from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
@@ -16,8 +22,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.config import settings
 from app.database import get_db
-from app.models import Answer, AnswerVersion, CompanyProfile, Evaluation, Question
+from app.dependencies import get_current_user
+from app.models import Answer, AnswerVersion, CompanyProfile, Evaluation, Question, User
 from app.schemas.evaluations import EvaluationCreateRequest, EvaluationResponse
 from app.services.evaluation_pipeline import run_evaluation_pipeline
 from app.services.pdf_report import PDFReportGenerator
@@ -29,9 +37,13 @@ router = APIRouter(prefix="/api/v1/evaluations", tags=["evaluations"])
 async def create_evaluation(
     request: EvaluationCreateRequest,
     background_tasks: BackgroundTasks,
+    user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new evaluation and kick off the analysis pipeline.
+
+    Requires authentication. Checks the user's tier before allowing
+    the evaluation — free users have a monthly limit, pro users don't.
 
     The evaluation is created with status='queued', then the background
     task runs the Claude analysis. The frontend polls GET /evaluations/{id}
@@ -40,6 +52,27 @@ async def create_evaluation(
     Returns the evaluation immediately (status=queued) — don't wait
     for Claude.
     """
+    # --- Tier enforcement ---
+    tier_limit = (
+        settings.PRO_EVALUATIONS_PER_MONTH
+        if user.plan_tier == "pro"
+        else settings.FREE_EVALUATIONS_PER_MONTH
+    )
+    if user.evaluations_this_month >= tier_limit:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "TIER_LIMIT_REACHED",
+                "message": (
+                    f"You've used all {tier_limit} evaluations this month. "
+                    f"{'Upgrade to Pro for unlimited evaluations.' if user.plan_tier == 'free' else 'Contact support if you need more.'}"
+                ),
+                "current_usage": user.evaluations_this_month,
+                "limit": tier_limit,
+                "plan_tier": user.plan_tier,
+            },
+        )
+
     # Validate answer version exists
     version_result = await db.execute(
         select(AnswerVersion).where(AnswerVersion.id == request.answer_version_id)
@@ -58,8 +91,8 @@ async def create_evaluation(
     await db.commit()
     await db.refresh(evaluation)
 
-    # Kick off background pipeline
-    background_tasks.add_task(run_evaluation_pipeline, evaluation.id)
+    # Kick off background pipeline (passes user_id for counter increment)
+    background_tasks.add_task(run_evaluation_pipeline, evaluation.id, user.id)
 
     return EvaluationResponse.model_validate(evaluation)
 

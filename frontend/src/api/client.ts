@@ -588,4 +588,34 @@ export async function generateAnswer(payload: {
   return data;
 }
 
+// ---------------------------------------------------------------------------
+// Billing endpoints
+// ---------------------------------------------------------------------------
+
+export interface BillingStatus {
+  plan_tier: string;
+  evaluations_this_month: number;
+  evaluation_limit: number;
+  stripe_customer_id: string | null;
+}
+
+export interface CheckoutResponse {
+  checkout_url: string;
+}
+
+export async function getBillingStatus(): Promise<BillingStatus> {
+  const { data } = await api.get<BillingStatus>("/billing/status");
+  return data;
+}
+
+export async function createCheckoutSession(): Promise<CheckoutResponse> {
+  const { data } = await api.post<CheckoutResponse>("/billing/checkout");
+  return data;
+}
+
+export async function createPortalSession(): Promise<{ portal_url: string }> {
+  const { data } = await api.post<{ portal_url: string }>("/billing/portal");
+  return data;
+}
+
 export default api;

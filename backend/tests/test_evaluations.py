@@ -56,12 +56,13 @@ MOCK_RESULT = EvaluationResult(
 
 @pytest.mark.asyncio
 async def test_create_evaluation(
-    client: AsyncClient, test_answer_version
+    client: AsyncClient, test_answer_version, auth_headers
 ):
     """POST /api/v1/evaluations creates an evaluation in queued state."""
     response = await client.post(
         "/api/v1/evaluations",
         json={"answer_version_id": str(test_answer_version.id)},
+        headers=auth_headers,
     )
     assert response.status_code == 201
     data = response.json()
@@ -71,11 +72,22 @@ async def test_create_evaluation(
 
 
 @pytest.mark.asyncio
-async def test_create_evaluation_invalid_version(client: AsyncClient):
+async def test_create_evaluation_requires_auth(client: AsyncClient, test_answer_version):
+    """POST /api/v1/evaluations without auth returns 401 (tier enforcement)."""
+    response = await client.post(
+        "/api/v1/evaluations",
+        json={"answer_version_id": str(test_answer_version.id)},
+    )
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_create_evaluation_invalid_version(client: AsyncClient, auth_headers):
     """POST /api/v1/evaluations with nonexistent version returns 404."""
     response = await client.post(
         "/api/v1/evaluations",
         json={"answer_version_id": str(uuid.uuid4())},
+        headers=auth_headers,
     )
     assert response.status_code == 404
 
@@ -107,7 +119,7 @@ async def test_get_evaluation_not_found(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_evaluation_pipeline_with_mock(
-    client: AsyncClient, test_company, test_question
+    client: AsyncClient, test_company, test_question, auth_headers
 ):
     """Full pipeline test: create answer → create evaluation → pipeline runs.
 
@@ -133,6 +145,7 @@ async def test_evaluation_pipeline_with_mock(
                 "failures dropped by 99%, saving approximately $2M annually."
             ),
         },
+        headers=auth_headers,
     )
     assert answer_resp.status_code == 201
     answer_id = answer_resp.json()["id"]
@@ -154,6 +167,7 @@ async def test_evaluation_pipeline_with_mock(
         eval_resp = await client.post(
             "/api/v1/evaluations",
             json={"answer_version_id": version_id},
+            headers=auth_headers,
         )
         assert eval_resp.status_code == 201
         eval_id = eval_resp.json()["id"]

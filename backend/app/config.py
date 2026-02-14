@@ -64,6 +64,16 @@ class Settings(BaseSettings):
     GITHUB_CLIENT_SECRET: str = ""
     OAUTH_REDIRECT_BASE: str = "http://localhost:8000"
 
+    # --- Stripe (optional — empty strings disable billing) ---
+    STRIPE_SECRET_KEY: str = ""
+    STRIPE_PUBLISHABLE_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+    STRIPE_PRO_PRICE_ID: str = ""  # Stripe Price ID for the Pro plan
+
+    # --- Tier limits ---
+    FREE_EVALUATIONS_PER_MONTH: int = 5
+    PRO_EVALUATIONS_PER_MONTH: int = 999  # effectively unlimited
+
     # --- Application ---
     APP_ENV: str = "development"
     DEBUG: bool = True
