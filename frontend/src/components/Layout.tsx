@@ -126,8 +126,20 @@ export default function Layout() {
               <MenuIcon />
             </IconButton>
           )}
-          <Typography variant="h6" noWrap sx={{ flexGrow: 1 }}>
-            Behavioral Interview Answer Evaluator
+          <Typography
+            variant="h6"
+            noWrap
+            sx={{
+              flexGrow: 1,
+              fontSize: { xs: "1rem", sm: "1.25rem" },
+            }}
+          >
+            <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
+              Behavioral Interview Answer Evaluator
+            </Box>
+            <Box component="span" sx={{ display: { xs: "inline", sm: "none" } }}>
+              BIAE
+            </Box>
           </Typography>
 
           {/* Auth section */}
@@ -211,7 +223,7 @@ export default function Layout() {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
+          p: { xs: 2, sm: 3 },
           width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
         }}
       >

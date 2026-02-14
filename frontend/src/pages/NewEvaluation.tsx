@@ -179,7 +179,11 @@ export default function NewEvaluation() {
 
   return (
     <Box sx={{ maxWidth: 800, mx: "auto" }}>
-      <Typography variant="h4" gutterBottom>
+      <Typography
+        variant="h4"
+        gutterBottom
+        sx={{ fontSize: { xs: "1.5rem", sm: "2.125rem" } }}
+      >
         New Evaluation
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>

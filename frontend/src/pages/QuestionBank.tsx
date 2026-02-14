@@ -206,7 +206,11 @@ export default function QuestionBank() {
         spacing={1}
       >
         <Box>
-          <Typography variant="h4" gutterBottom>
+          <Typography
+            variant="h4"
+            gutterBottom
+            sx={{ fontSize: { xs: "1.5rem", sm: "2.125rem" } }}
+          >
             Question Bank
           </Typography>
           <Typography variant="body1" color="text.secondary">
@@ -461,7 +465,7 @@ export default function QuestionBank() {
                   </Stack>
 
                   {/* Action buttons */}
-                  <Stack direction="row" spacing={1}>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                     <Tooltip title="Evaluate an answer for this question">
                       <Button
                         size="small"

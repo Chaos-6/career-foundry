@@ -123,7 +123,13 @@ export default function PricingPage() {
         </Alert>
       )}
 
-      <Typography variant="h4" fontWeight={700} textAlign="center" gutterBottom>
+      <Typography
+        variant="h4"
+        fontWeight={700}
+        textAlign="center"
+        gutterBottom
+        sx={{ fontSize: { xs: "1.5rem", sm: "2.125rem" } }}
+      >
         Choose Your Plan
       </Typography>
       <Typography

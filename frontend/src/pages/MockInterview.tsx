@@ -247,7 +247,11 @@ export default function MockInterview() {
   if (phase === "setup") {
     return (
       <Box sx={{ maxWidth: 600, mx: "auto" }}>
-        <Typography variant="h4" gutterBottom>
+        <Typography
+          variant="h4"
+          gutterBottom
+          sx={{ fontSize: { xs: "1.5rem", sm: "2.125rem" } }}
+        >
           <TimerIcon sx={{ mr: 1, verticalAlign: "bottom" }} />
           Mock Interview
         </Typography>
@@ -370,7 +374,12 @@ export default function MockInterview() {
             >
               {formatTime(secondsLeft)}
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ ml: "auto" }}>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              noWrap
+              sx={{ ml: "auto", display: { xs: "none", sm: "block" } }}
+            >
               {selectedCompany?.name} &middot; {role} &middot; {level}
             </Typography>
           </Box>

@@ -159,7 +159,11 @@ export default function VersionComparison() {
         sx={{ mb: 3 }}
       >
         <Box>
-          <Typography variant="h4" gutterBottom>
+          <Typography
+            variant="h4"
+            gutterBottom
+            sx={{ fontSize: { xs: "1.5rem", sm: "2.125rem" } }}
+          >
             Version Comparison
           </Typography>
           <Typography variant="body2" color="text.secondary">

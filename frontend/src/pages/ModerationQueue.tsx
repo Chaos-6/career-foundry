@@ -118,7 +118,12 @@ export default function ModerationQueue() {
       {/* Header */}
       <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 1 }}>
         <GavelIcon color="primary" fontSize="large" />
-        <Typography variant="h4">Moderation Queue</Typography>
+        <Typography
+          variant="h4"
+          sx={{ fontSize: { xs: "1.5rem", sm: "2.125rem" } }}
+        >
+          Moderation Queue
+        </Typography>
       </Stack>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
         Review community-submitted questions. Approved questions appear in the

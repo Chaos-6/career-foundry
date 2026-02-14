@@ -208,7 +208,12 @@ export default function CoachDashboard() {
       {/* Header */}
       <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 1 }}>
         <GroupsIcon color="primary" fontSize="large" />
-        <Typography variant="h4">Coaching</Typography>
+        <Typography
+          variant="h4"
+          sx={{ fontSize: { xs: "1.5rem", sm: "2.125rem" } }}
+        >
+          Coaching
+        </Typography>
       </Stack>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
         Invite students, track their progress, and provide personalized feedback

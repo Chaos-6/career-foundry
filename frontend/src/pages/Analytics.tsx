@@ -113,13 +113,19 @@ export default function Analytics() {
     <Box sx={{ maxWidth: 960, mx: "auto" }}>
       {/* Header */}
       <Stack
-        direction="row"
+        direction={{ xs: "column", sm: "row" }}
         justifyContent="space-between"
-        alignItems="center"
+        alignItems={{ xs: "flex-start", sm: "center" }}
+        spacing={1}
         sx={{ mb: 3 }}
       >
         <Box>
-          <Typography variant="h4" gutterBottom fontWeight={700}>
+          <Typography
+            variant="h4"
+            gutterBottom
+            fontWeight={700}
+            sx={{ fontSize: { xs: "1.5rem", sm: "2.125rem" } }}
+          >
             Advanced Analytics
           </Typography>
           <Typography variant="body2" color="text.secondary">
@@ -457,8 +463,8 @@ function CompanyTable({
   breakdowns: CompanyBreakdown[];
 }) {
   return (
-    <TableContainer>
-      <Table size="small">
+    <TableContainer sx={{ overflowX: "auto" }}>
+      <Table size="small" sx={{ minWidth: 600 }}>
         <TableHead>
           <TableRow>
             <TableCell sx={{ fontWeight: 600 }}>Company</TableCell>

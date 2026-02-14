@@ -159,10 +159,20 @@ export default function Dashboard() {
     <Box sx={{ maxWidth: 960, mx: "auto" }}>
       {/* Hero */}
       <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" gutterBottom fontWeight={700}>
+        <Typography
+          variant="h4"
+          gutterBottom
+          fontWeight={700}
+          sx={{ fontSize: { xs: "1.5rem", sm: "2.125rem" } }}
+        >
           Welcome to BIAE
         </Typography>
-        <Typography variant="h6" color="text.secondary" fontWeight={400}>
+        <Typography
+          variant="h6"
+          color="text.secondary"
+          fontWeight={400}
+          sx={{ fontSize: { xs: "0.95rem", sm: "1.25rem" } }}
+        >
           AI-powered STAR answer coaching for tech interview preparation
         </Typography>
       </Box>
@@ -491,21 +501,23 @@ function RecentEvaluationsTable({
 }) {
   const navigate = useNavigate();
 
+  const hiddenOnMobile = { display: { xs: "none", sm: "table-cell" } };
+
   return (
-    <TableContainer>
-      <Table size="small">
+    <TableContainer sx={{ overflowX: "auto" }}>
+      <Table size="small" sx={{ minWidth: { xs: 400, sm: "auto" } }}>
         <TableHead>
           <TableRow>
             <TableCell sx={{ fontWeight: 600 }}>Question</TableCell>
-            <TableCell sx={{ fontWeight: 600 }}>Company</TableCell>
-            <TableCell sx={{ fontWeight: 600 }}>Role</TableCell>
+            <TableCell sx={{ fontWeight: 600, ...hiddenOnMobile }}>Company</TableCell>
+            <TableCell sx={{ fontWeight: 600, ...hiddenOnMobile }}>Role</TableCell>
             <TableCell align="center" sx={{ fontWeight: 600 }}>
               Score
             </TableCell>
-            <TableCell align="center" sx={{ fontWeight: 600 }}>
+            <TableCell align="center" sx={{ fontWeight: 600, ...hiddenOnMobile }}>
               Status
             </TableCell>
-            <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
+            <TableCell sx={{ fontWeight: 600, ...hiddenOnMobile }}>Date</TableCell>
             <TableCell />
           </TableRow>
         </TableHead>
@@ -517,15 +529,15 @@ function RecentEvaluationsTable({
               sx={{ cursor: "pointer" }}
               onClick={() => navigate(`/evaluations/${ev.evaluation_id}`)}
             >
-              <TableCell sx={{ maxWidth: 240 }}>
+              <TableCell sx={{ maxWidth: { xs: 160, sm: 240 } }}>
                 <Typography variant="body2" noWrap>
                   {ev.question_text || "Custom question"}
                 </Typography>
               </TableCell>
-              <TableCell>
+              <TableCell sx={hiddenOnMobile}>
                 <Typography variant="body2">{ev.company_name}</Typography>
               </TableCell>
-              <TableCell>
+              <TableCell sx={hiddenOnMobile}>
                 <Typography variant="body2">{ev.target_role}</Typography>
               </TableCell>
               <TableCell align="center">
@@ -541,7 +553,7 @@ function RecentEvaluationsTable({
                   "—"
                 )}
               </TableCell>
-              <TableCell align="center">
+              <TableCell align="center" sx={hiddenOnMobile}>
                 <Chip
                   label={ev.status}
                   size="small"
@@ -556,7 +568,7 @@ function RecentEvaluationsTable({
                   sx={{ height: 22, fontSize: 11 }}
                 />
               </TableCell>
-              <TableCell>
+              <TableCell sx={hiddenOnMobile}>
                 <Typography variant="caption" color="text.secondary">
                   {new Date(ev.created_at).toLocaleDateString()}
                 </Typography>

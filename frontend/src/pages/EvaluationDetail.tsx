@@ -229,7 +229,11 @@ export default function EvaluationDetail() {
         sx={{ mb: 3 }}
       >
         <Box>
-          <Typography variant="h4" gutterBottom>
+          <Typography
+            variant="h4"
+            gutterBottom
+            sx={{ fontSize: { xs: "1.4rem", sm: "2.125rem" } }}
+          >
             Evaluation Results
             {evaluation.version_number && (
               <Chip
@@ -259,13 +263,19 @@ export default function EvaluationDetail() {
             )}
           </Stack>
         </Box>
-        <Stack direction="row" spacing={1} flexWrap="wrap">
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={1}
+          flexWrap="wrap"
+          sx={{ width: { xs: "100%", sm: "auto" } }}
+        >
           <Button
             variant="contained"
             color="secondary"
             startIcon={<EditIcon />}
             onClick={handleStartRevise}
             disabled={!evaluation.answer_id || revising}
+            fullWidth={false}
           >
             Revise & Re-Evaluate
           </Button>

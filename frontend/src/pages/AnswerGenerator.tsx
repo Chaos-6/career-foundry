@@ -206,7 +206,11 @@ export default function AnswerGenerator() {
 
   return (
     <Box sx={{ maxWidth: 800, mx: "auto" }}>
-      <Typography variant="h4" gutterBottom>
+      <Typography
+        variant="h4"
+        gutterBottom
+        sx={{ fontSize: { xs: "1.5rem", sm: "2.125rem" } }}
+      >
         <AutoAwesomeIcon sx={{ mr: 1, verticalAlign: "bottom" }} />
         AI Answer Generator
       </Typography>
