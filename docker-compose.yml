@@ -1,0 +1,59 @@
+# Docker Compose for BIAE — full stack
+#
+# Services:
+#   db       — PostgreSQL 16 with persistent volume
+#   backend  — FastAPI API server
+#   frontend — React app served via nginx
+#
+# Usage:
+#   cp backend/.env.example backend/.env  # fill in real values
+#   docker compose up --build
+#
+# Access:
+#   Frontend:  http://localhost:3000
+#   API:       http://localhost:8000
+#   DB:        localhost:5432
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: biae
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d biae"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    environment:
+      # Override DATABASE_URL to point to the Docker db service
+      DATABASE_URL: postgresql+asyncpg://postgres:password@db:5432/biae
+      CORS_ORIGINS: "http://localhost:3000,http://localhost"
+      FRONTEND_URL: "http://localhost:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  pgdata:
