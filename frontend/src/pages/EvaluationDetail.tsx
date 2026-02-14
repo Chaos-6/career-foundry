@@ -49,6 +49,7 @@ import {
 } from "../api/client";
 import ScoreBar from "../components/ScoreBar";
 import SimpleMarkdown from "../components/SimpleMarkdown";
+import PageLoader from "../components/PageLoader";
 import UpgradePrompt, { isTierLimitError } from "../components/UpgradePrompt";
 
 export default function EvaluationDetail() {
@@ -144,14 +145,7 @@ export default function EvaluationDetail() {
   };
 
   if (isLoading) {
-    return (
-      <Box sx={{ textAlign: "center", py: 8 }}>
-        <CircularProgress size={48} />
-        <Typography sx={{ mt: 2 }} color="text.secondary">
-          Loading evaluation...
-        </Typography>
-      </Box>
-    );
+    return <PageLoader message="Loading evaluation..." />;
   }
 
   if (error) {

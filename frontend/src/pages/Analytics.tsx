@@ -56,6 +56,7 @@ import {
   CompanyBreakdown,
   ReadinessScore,
 } from "../api/client";
+import PageLoader from "../components/PageLoader";
 
 // ---------------------------------------------------------------------------
 // Chart colours — consistent with Dashboard.tsx
@@ -88,14 +89,7 @@ export default function Analytics() {
   });
 
   if (isLoading) {
-    return (
-      <Box sx={{ textAlign: "center", py: 8 }}>
-        <CircularProgress size={48} />
-        <Typography sx={{ mt: 2 }} color="text.secondary">
-          Loading analytics...
-        </Typography>
-      </Box>
-    );
+    return <PageLoader message="Loading analytics..." />;
   }
 
   if (error || !analytics) {

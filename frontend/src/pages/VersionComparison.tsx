@@ -20,7 +20,6 @@ import {
   Card,
   CardContent,
   Chip,
-  CircularProgress,
   Divider,
   Grid,
   Stack,
@@ -39,6 +38,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 
 import { getAnswerComparison, VersionScoreSummary } from "../api/client";
+import PageLoader from "../components/PageLoader";
 
 const DIMENSIONS = [
   { key: "situation_score", label: "Situation" },
@@ -117,14 +117,7 @@ export default function VersionComparison() {
   });
 
   if (isLoading) {
-    return (
-      <Box sx={{ textAlign: "center", py: 8 }}>
-        <CircularProgress size={48} />
-        <Typography sx={{ mt: 2 }} color="text.secondary">
-          Loading version comparison...
-        </Typography>
-      </Box>
-    );
+    return <PageLoader message="Loading version comparison..." />;
   }
 
   if (error || !comparison) {
