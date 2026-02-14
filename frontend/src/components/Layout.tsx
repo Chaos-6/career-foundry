@@ -114,6 +114,7 @@ export default function Layout() {
           {isAuthenticated ? (
             <Stack direction="row" alignItems="center" spacing={1.5}>
               <Avatar
+                src={user?.avatar_url || undefined}
                 sx={{
                   width: 32,
                   height: 32,

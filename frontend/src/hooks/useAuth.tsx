@@ -38,6 +38,8 @@ export interface AuthUser {
   id: string;
   email: string;
   display_name: string | null;
+  avatar_url: string | null;
+  oauth_provider: string | null;
   default_role: string | null;
   default_experience_level: string | null;
   plan_tier: string;
@@ -55,6 +57,8 @@ interface AuthContextValue {
     displayName?: string
   ) => Promise<void>;
   logout: () => void;
+  /** Re-fetch user from stored token. Used after OAuth sets tokens externally. */
+  hydrate: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -114,6 +118,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
+  const hydrate = useCallback(() => {
+    const token = getAccessToken();
+    if (!token) return;
+    setLoading(true);
+    getMe()
+      .then((u) => setUser(u))
+      .catch(() => clearTokens())
+      .finally(() => setLoading(false));
+  }, []);
+
   const value = useMemo(
     () => ({
       user,
@@ -122,8 +136,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login,
       register,
       logout,
+      hydrate,
     }),
-    [user, loading, login, register, logout]
+    [user, loading, login, register, logout, hydrate]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

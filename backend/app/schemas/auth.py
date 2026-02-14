@@ -45,6 +45,8 @@ class UserResponse(BaseModel):
     id: UUID
     email: str
     display_name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    oauth_provider: Optional[str] = None
     default_role: Optional[str] = None
     default_experience_level: Optional[str] = None
     plan_tier: str

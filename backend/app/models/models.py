@@ -102,14 +102,28 @@ class Question(Base):
 # ---------------------------------------------------------------------------
 
 class User(Base):
-    """A registered user with auth credentials and preferences."""
+    """A registered user with auth credentials and preferences.
+
+    Supports both email/password and OAuth authentication:
+    - password_hash is nullable for OAuth-only users
+    - oauth_provider / oauth_provider_id track the OAuth identity
+    - A user can have both a password AND an OAuth link (e.g. registered
+      with email, later linked Google)
+    """
 
     __tablename__ = "users"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String(255), unique=True, nullable=False, index=True)
-    password_hash = Column(String(255), nullable=False)
+    password_hash = Column(String(255), nullable=True)  # nullable for OAuth-only users
     display_name = Column(String(255))
+    avatar_url = Column(String(500))  # From OAuth provider profile picture
+
+    # OAuth fields
+    oauth_provider = Column(String(50))      # "google", "github", or None
+    oauth_provider_id = Column(String(255))  # Provider's unique user ID
+
+    # Preferences
     default_company_id = Column(UUID(as_uuid=True), ForeignKey("company_profiles.id"))
     default_role = Column(String(50))
     default_experience_level = Column(String(50))

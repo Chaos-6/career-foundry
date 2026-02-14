@@ -30,6 +30,7 @@ from app.routers import (
     evaluations,
     generator,
     mock_interview,
+    oauth,
     questions,
 )
 
@@ -72,6 +73,7 @@ app.add_middleware(
 
 # --- Register Routers ---
 app.include_router(auth.router)
+app.include_router(oauth.router)
 app.include_router(companies.router)
 app.include_router(questions.router)
 app.include_router(answers.router)

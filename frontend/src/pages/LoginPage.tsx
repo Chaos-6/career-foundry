@@ -1,16 +1,22 @@
 /**
- * Login & Register page — handles both auth flows with a tab toggle.
+ * Login & Register page — email/password + OAuth (Google, GitHub).
  *
  * Why a single page instead of two?
  *   - Users frequently switch between "I have an account" and "I need one"
  *   - A single page avoids route navigation during a frustration-prone flow
  *   - The forms share the same layout, reducing code duplication
  *
+ * OAuth flow:
+ *   The backend redirects to this page with tokens in the URL fragment
+ *   (#access_token=...&refresh_token=...). The useEffect on mount checks
+ *   for this fragment, stores the tokens, and redirects to the dashboard.
+ *   Fragments are never sent to the server, keeping tokens off access logs.
+ *
  * After successful auth, redirects to the page the user was trying to reach
  * (via React Router's `state.from` pattern) or to the dashboard.
  */
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Alert,
@@ -27,7 +33,12 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import GoogleIcon from "@mui/icons-material/Google";
+import GitHubIcon from "@mui/icons-material/GitHub";
 import { useAuth } from "../hooks/useAuth";
+import { setTokens } from "../api/client";
+
+const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
 export default function LoginPage() {
   const [tab, setTab] = useState<"login" | "register">("login");
@@ -38,18 +49,43 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const { login, register } = useAuth();
+  const { login, register, hydrate } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   // Where to redirect after auth — defaults to dashboard
   const from = (location.state as { from?: string })?.from || "/";
 
+  // ---------------------------------------------------------------------------
+  // Handle OAuth redirect — tokens arrive in the URL fragment
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (!hash || !hash.includes("access_token")) return;
+
+    // Parse fragment params: #access_token=xxx&refresh_token=yyy
+    const params = new URLSearchParams(hash.substring(1));
+    const accessToken = params.get("access_token");
+    const refreshToken = params.get("refresh_token");
+
+    if (accessToken && refreshToken) {
+      // Store tokens and refresh auth state
+      setTokens(accessToken, refreshToken);
+      // Clear the fragment from the URL (security hygiene)
+      window.history.replaceState(null, "", window.location.pathname);
+      // Re-hydrate the auth context so useAuth picks up the new tokens
+      hydrate();
+      navigate(from, { replace: true });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ---------------------------------------------------------------------------
+  // Email/password auth
+  // ---------------------------------------------------------------------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    // Basic validation
     if (!email || !password) {
       setError("Email and password are required.");
       return;
@@ -75,7 +111,6 @@ export default function LoginPage() {
       }
       navigate(from, { replace: true });
     } catch (err: any) {
-      // Extract error message from API response
       const msg =
         err?.response?.data?.detail ||
         err?.message ||
@@ -90,6 +125,17 @@ export default function LoginPage() {
     setError(null);
     setPassword("");
     setConfirmPassword("");
+  };
+
+  // ---------------------------------------------------------------------------
+  // OAuth handlers — redirect to backend which redirects to provider
+  // ---------------------------------------------------------------------------
+  const handleGoogleLogin = () => {
+    window.location.href = `${API_BASE}/auth/oauth/google`;
+  };
+
+  const handleGithubLogin = () => {
+    window.location.href = `${API_BASE}/auth/oauth/github`;
   };
 
   return (
@@ -141,6 +187,47 @@ export default function LoginPage() {
             </Alert>
           )}
 
+          {/* OAuth buttons */}
+          <Stack spacing={1.5} sx={{ mb: 2 }}>
+            <Button
+              variant="outlined"
+              fullWidth
+              startIcon={<GoogleIcon />}
+              onClick={handleGoogleLogin}
+              sx={{
+                py: 1.2,
+                textTransform: "none",
+                borderColor: "divider",
+                color: "text.primary",
+                "&:hover": { borderColor: "primary.main", bgcolor: "action.hover" },
+              }}
+            >
+              Continue with Google
+            </Button>
+            <Button
+              variant="outlined"
+              fullWidth
+              startIcon={<GitHubIcon />}
+              onClick={handleGithubLogin}
+              sx={{
+                py: 1.2,
+                textTransform: "none",
+                borderColor: "divider",
+                color: "text.primary",
+                "&:hover": { borderColor: "text.primary", bgcolor: "action.hover" },
+              }}
+            >
+              Continue with GitHub
+            </Button>
+          </Stack>
+
+          <Divider sx={{ my: 2 }}>
+            <Typography variant="caption" color="text.secondary">
+              OR
+            </Typography>
+          </Divider>
+
+          {/* Email/password form */}
           <form onSubmit={handleSubmit}>
             <Stack spacing={2}>
               {tab === "register" && (
@@ -162,7 +249,6 @@ export default function LoginPage() {
                 required
                 fullWidth
                 autoComplete="email"
-                autoFocus
               />
 
               <TextField

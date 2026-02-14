@@ -250,6 +250,8 @@ export interface AuthUser {
   id: string;
   email: string;
   display_name: string | null;
+  avatar_url: string | null;
+  oauth_provider: string | null;
   default_role: string | null;
   default_experience_level: string | null;
   plan_tier: string;
