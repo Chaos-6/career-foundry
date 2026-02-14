@@ -391,6 +391,123 @@ export async function moderateQuestion(
 }
 
 // ---------------------------------------------------------------------------
+// Coaching endpoints
+// ---------------------------------------------------------------------------
+
+export interface CoachingRelationship {
+  id: string;
+  coach_id: string;
+  coach_email: string;
+  coach_name: string | null;
+  student_id: string;
+  student_email: string;
+  student_name: string | null;
+  status: string;
+  created_at: string | null;
+  accepted_at: string | null;
+}
+
+export interface StudentSummary {
+  student_id: string;
+  email: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  total_evaluations: number;
+  average_score: number | null;
+  best_score: number | null;
+  latest_evaluation_date: string | null;
+  relationship_id: string;
+}
+
+export interface CoachDashboard {
+  students: StudentSummary[];
+  total_students: number;
+  pending_invites: number;
+}
+
+export interface StudentEvaluation {
+  evaluation_id: string;
+  answer_id: string;
+  question_text: string | null;
+  company_name: string | null;
+  target_role: string;
+  average_score: number | null;
+  situation_score: number | null;
+  task_score: number | null;
+  action_score: number | null;
+  result_score: number | null;
+  engagement_score: number | null;
+  overall_score: number | null;
+  status: string;
+  created_at: string;
+  version_number: number | null;
+  coach_notes: CoachNotes | null;
+}
+
+export interface CoachNotes {
+  notes: string;
+  focus_areas: string[];
+  coach_id: string;
+  coach_name: string | null;
+  updated_at: string | null;
+}
+
+// Coach endpoints
+export async function inviteStudent(email: string): Promise<CoachingRelationship> {
+  const { data } = await api.post<CoachingRelationship>("/api/v1/coaching/invite", { email });
+  return data;
+}
+
+export async function getCoachStudents(): Promise<CoachDashboard> {
+  const { data } = await api.get<CoachDashboard>("/api/v1/coaching/students");
+  return data;
+}
+
+export async function getStudentEvaluations(studentId: string): Promise<StudentEvaluation[]> {
+  const { data } = await api.get<StudentEvaluation[]>(
+    `/api/v1/coaching/students/${studentId}/evaluations`
+  );
+  return data;
+}
+
+export async function updateCoachNotes(
+  evaluationId: string,
+  payload: { notes: string; focus_areas?: string[] }
+): Promise<CoachNotes> {
+  const { data } = await api.patch<CoachNotes>(
+    `/api/v1/coaching/evaluations/${evaluationId}/coach-notes`,
+    payload
+  );
+  return data;
+}
+
+// Student endpoints
+export async function getMyInvites(): Promise<CoachingRelationship[]> {
+  const { data } = await api.get<CoachingRelationship[]>("/api/v1/coaching/invites");
+  return data;
+}
+
+export async function acceptInvite(inviteId: string): Promise<CoachingRelationship> {
+  const { data } = await api.post<CoachingRelationship>(
+    `/api/v1/coaching/invites/${inviteId}/accept`
+  );
+  return data;
+}
+
+export async function declineInvite(inviteId: string): Promise<void> {
+  await api.post(`/api/v1/coaching/invites/${inviteId}/decline`);
+}
+
+export async function getMyCoaches(): Promise<CoachingRelationship[]> {
+  const { data } = await api.get<CoachingRelationship[]>("/api/v1/coaching/my-coaches");
+  return data;
+}
+
+export async function removeRelationship(relationshipId: string): Promise<void> {
+  await api.delete(`/api/v1/coaching/relationships/${relationshipId}`);
+}
+
+// ---------------------------------------------------------------------------
 // Answer endpoints
 // ---------------------------------------------------------------------------
 

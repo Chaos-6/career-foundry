@@ -3,6 +3,7 @@
 from app.models.models import (
     Answer,
     AnswerVersion,
+    CoachingRelationship,
     CompanyProfile,
     Evaluation,
     MockSession,
@@ -18,4 +19,5 @@ __all__ = [
     "AnswerVersion",
     "Evaluation",
     "MockSession",
+    "CoachingRelationship",
 ]

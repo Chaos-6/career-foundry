@@ -1,14 +1,15 @@
 """
 SQLAlchemy models for the Behavioral Interview Answer Evaluator.
 
-7 tables:
-1. CompanyProfile  — 22+ companies with guiding principles (JSONB)
-2. Question        — 100+ behavioral questions tagged by role/competency/difficulty
-3. User            — Accounts with auth and preferences
-4. Answer          — Links a user's question attempt to a company/role context
-5. AnswerVersion   — Revisions of an answer (v1, v2, ...) for improvement tracking
-6. Evaluation      — Claude's scored evaluation of an answer version
-7. MockSession     — Timed practice session metadata
+8 tables:
+1. CompanyProfile        — 22+ companies with guiding principles (JSONB)
+2. Question              — 100+ behavioral questions tagged by role/competency/difficulty
+3. User                  — Accounts with auth and preferences
+4. Answer                — Links a user's question attempt to a company/role context
+5. AnswerVersion         — Revisions of an answer (v1, v2, ...) for improvement tracking
+6. Evaluation            — Claude's scored evaluation of an answer version
+7. MockSession           — Timed practice session metadata
+8. CoachingRelationship  — Student↔coach links with invite workflow
 
 Key patterns:
 - UUID primary keys everywhere
@@ -251,6 +252,9 @@ class Evaluation(Base):
     # Follow-up questions
     follow_up_questions = Column(JSONB)  # [{question, why_asked, how_to_prepare}]
 
+    # Coach feedback
+    coach_notes = Column(JSONB)  # {notes: str, focus_areas: [str], coach_id: str}
+
     # Metadata
     model_used = Column(String(100))
     input_tokens = Column(Integer)
@@ -287,3 +291,48 @@ class MockSession(Base):
     question = relationship("Question")
     answer_version = relationship("AnswerVersion")
     evaluation = relationship("Evaluation")
+
+
+# ---------------------------------------------------------------------------
+# Coaching Relationships
+# ---------------------------------------------------------------------------
+
+class CoachingRelationship(Base):
+    """A student↔coach link with invite workflow.
+
+    Lifecycle:
+    - Coach invites student by email → status='pending'
+    - Student accepts → status='active'
+    - Either party can revoke → status='revoked'
+
+    A student can have multiple coaches, and a coach can have multiple
+    students. The unique constraint prevents duplicate active relationships.
+    """
+
+    __tablename__ = "coaching_relationships"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    coach_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    student_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    status = Column(String(20), default="pending")  # pending, active, revoked
+    invited_email = Column(String(255))  # Email used in invite (student may not exist yet)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    accepted_at = Column(DateTime(timezone=True))
+
+    __table_args__ = (
+        UniqueConstraint("coach_id", "student_id", name="uq_coaching_pair"),
+    )
+
+    # Relationships
+    coach = relationship("User", foreign_keys=[coach_id])
+    student = relationship("User", foreign_keys=[student_id])

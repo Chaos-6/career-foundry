@@ -26,6 +26,7 @@ from app.routers import (
     answers,
     auth,
     billing,
+    coaching,
     companies,
     dashboard,
     evaluations,
@@ -83,6 +84,7 @@ app.include_router(evaluations.router)
 app.include_router(dashboard.router)
 app.include_router(mock_interview.router)
 app.include_router(generator.router)
+app.include_router(coaching.router)
 
 
 # --- Health Check Endpoints ---

@@ -10,6 +10,7 @@
  * - /generator        AI Answer Generator (protected)
  * - /questions        Question Bank (public — browsing is free)
  * - /moderation       Moderation Queue (protected — moderator-only API)
+ * - /coaching         Coach Dashboard (protected — invite/manage students)
  * - /analytics        Advanced Analytics (protected)
  * - /pricing          Pricing/Plans (public)
  * - /billing/success  Post-checkout success (protected)
@@ -37,6 +38,7 @@ import VersionComparison from "./pages/VersionComparison";
 import Analytics from "./pages/Analytics";
 import PricingPage from "./pages/PricingPage";
 import ModerationQueue from "./pages/ModerationQueue";
+import CoachDashboard from "./pages/CoachDashboard";
 
 function App() {
   return (
@@ -114,6 +116,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <ModerationQueue />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/coaching"
+            element={
+              <ProtectedRoute>
+                <CoachDashboard />
               </ProtectedRoute>
             }
           />

@@ -89,11 +89,17 @@ async def setup_db():
             "  SELECT id FROM company_profiles WHERE name LIKE 'Test Corp%'"
             ")"
         ))
-        # 5. Test Corp companies
+        # 5. Coaching relationships tied to test users
+        await session.execute(text(
+            "DELETE FROM coaching_relationships WHERE "
+            "coach_id IN (SELECT id FROM users WHERE email LIKE 'test_%@example.com') "
+            "OR student_id IN (SELECT id FROM users WHERE email LIKE 'test_%@example.com')"
+        ))
+        # 6. Test Corp companies
         await session.execute(text(
             "DELETE FROM company_profiles WHERE name LIKE 'Test Corp%'"
         ))
-        # 6. Test users (created by auth tests via API)
+        # 7. Test users (created by auth tests via API)
         await session.execute(text(
             "DELETE FROM users WHERE email LIKE 'test_%@example.com'"
         ))
