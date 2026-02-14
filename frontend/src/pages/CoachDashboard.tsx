@@ -21,7 +21,6 @@ import {
   Card,
   CardContent,
   Chip,
-  CircularProgress,
   Collapse,
   Dialog,
   DialogActions,
@@ -39,7 +38,6 @@ import {
 } from "@mui/material";
 import GroupsIcon from "@mui/icons-material/Groups";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import SchoolIcon from "@mui/icons-material/School";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
@@ -59,10 +57,7 @@ import {
   removeRelationship,
   StudentSummary,
   StudentEvaluation,
-  CoachingRelationship,
 } from "../api/client";
-import { useAuth } from "../hooks/useAuth";
-
 // ---------------------------------------------------------------------------
 // Score color helper
 // ---------------------------------------------------------------------------
@@ -79,7 +74,6 @@ function scoreColor(score: number | null): string {
 // ---------------------------------------------------------------------------
 
 export default function CoachDashboard() {
-  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   // Invite form state
@@ -105,7 +99,7 @@ export default function CoachDashboard() {
     queryFn: getCoachStudents,
   });
 
-  const { data: invites = [], isLoading: loadingInvites } = useQuery({
+  const { data: invites = [] } = useQuery({
     queryKey: ["my-invites"],
     queryFn: getMyInvites,
   });

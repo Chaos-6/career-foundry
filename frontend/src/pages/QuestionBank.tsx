@@ -84,7 +84,7 @@ const difficultyColors: Record<string, "default" | "warning" | "error"> = {
 
 export default function QuestionBank() {
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
 
   // Filter state

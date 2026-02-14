@@ -9,6 +9,7 @@
 
 import React from "react";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
+import RouteErrorBoundary from "./RouteErrorBoundary";
 import {
   AppBar,
   Avatar,
@@ -228,7 +229,9 @@ export default function Layout() {
         }}
       >
         <Toolbar /> {/* Spacer for fixed AppBar */}
-        <Outlet />
+        <RouteErrorBoundary resetKey={location.pathname}>
+          <Outlet />
+        </RouteErrorBoundary>
       </Box>
     </Box>
   );
