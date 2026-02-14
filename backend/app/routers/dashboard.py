@@ -6,8 +6,8 @@ these endpoints to render personalized stats, recent activity, and
 score trend charts.
 """
 
-from datetime import datetime
-from typing import Optional
+from datetime import datetime, timezone, timedelta
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
@@ -18,6 +18,7 @@ from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import Answer, AnswerVersion, CompanyProfile, Evaluation, Question, User
+from app.services.gamification import BADGE_DEFINITIONS
 
 router = APIRouter(prefix="/api/v1/dashboard", tags=["dashboard"])
 
@@ -25,6 +26,24 @@ router = APIRouter(prefix="/api/v1/dashboard", tags=["dashboard"])
 # ---------------------------------------------------------------------------
 # Response schemas
 # ---------------------------------------------------------------------------
+
+class BadgeInfo(BaseModel):
+    """A single badge with unlock status."""
+    id: str
+    name: str
+    description: str
+    icon: str
+    unlocked: bool
+    unlocked_at: str | None = None
+
+
+class StreakInfo(BaseModel):
+    """Practice streak data for the dashboard widget."""
+    current_streak: int
+    longest_streak: int
+    last_practice_date: str | None
+    streak_active: bool  # True if user practiced today or yesterday
+
 
 class DashboardStats(BaseModel):
     """Summary statistics for the user's dashboard."""
@@ -34,6 +53,8 @@ class DashboardStats(BaseModel):
     best_score: float | None
     total_answers: int
     evaluations_this_month: int
+    streak: StreakInfo | None = None
+    badges: list[BadgeInfo] = []
 
 
 class RecentEvaluation(BaseModel):
@@ -103,12 +124,44 @@ async def get_dashboard_stats(
     avg_score = round(float(row[1]), 1) if row[1] else None
     best_score = round(float(row[2]), 1) if row[2] else None
 
+    # Build streak info
+    streak_active = False
+    if user.last_practice_date:
+        last_date = user.last_practice_date.date()
+        today = datetime.now(timezone.utc).date()
+        streak_active = last_date >= today - timedelta(days=1)
+
+    streak_info = StreakInfo(
+        current_streak=getattr(user, "current_streak", 0) or 0,
+        longest_streak=getattr(user, "longest_streak", 0) or 0,
+        last_practice_date=(
+            user.last_practice_date.isoformat() if user.last_practice_date else None
+        ),
+        streak_active=streak_active,
+    )
+
+    # Build badge info — merge definitions with user's unlocked badges
+    user_badges = {b["id"]: b for b in (getattr(user, "badges", None) or [])}
+    badge_list = []
+    for defn in BADGE_DEFINITIONS:
+        unlocked = defn["id"] in user_badges
+        badge_list.append(BadgeInfo(
+            id=defn["id"],
+            name=defn["name"],
+            description=defn["description"],
+            icon=defn["icon"],
+            unlocked=unlocked,
+            unlocked_at=user_badges[defn["id"]].get("unlocked_at") if unlocked else None,
+        ))
+
     return DashboardStats(
         total_evaluations=total_evals,
         average_score=avg_score,
         best_score=best_score,
         total_answers=total_answers,
         evaluations_this_month=user.evaluations_this_month,
+        streak=streak_info,
+        badges=badge_list,
     )
 
 

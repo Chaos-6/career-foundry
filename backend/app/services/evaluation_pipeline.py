@@ -177,7 +177,7 @@ async def run_evaluation_pipeline(
                     await db.commit()
 
             # ----------------------------------------------------------
-            # 7. Increment user's monthly evaluation counter
+            # 7. Increment user's monthly counter, streak, and badges
             # ----------------------------------------------------------
             if user_id:
                 user_result = await db.execute(
@@ -186,6 +186,15 @@ async def run_evaluation_pipeline(
                 user = user_result.scalar_one_or_none()
                 if user:
                     user.evaluations_this_month = (user.evaluations_this_month or 0) + 1
+
+                    # Update practice streak and check badges
+                    try:
+                        from app.services.gamification import update_streak, check_and_award_badges
+                        update_streak(user)
+                        await check_and_award_badges(user, evaluation, db)
+                    except Exception:
+                        logger.exception("Gamification update failed (non-fatal)")
+
                     await db.commit()
 
             logger.info(

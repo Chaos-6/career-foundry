@@ -43,7 +43,12 @@ import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import LocalFireDepartmentIcon from "@mui/icons-material/LocalFireDepartment";
+import ExploreIcon from "@mui/icons-material/Explore";
+import StarIcon from "@mui/icons-material/Star";
 import HistoryIcon from "@mui/icons-material/History";
+import LockIcon from "@mui/icons-material/Lock";
+import LockOpenIcon from "@mui/icons-material/LockOpen";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import {
   AreaChart,
@@ -62,6 +67,8 @@ import {
   getRecentEvaluations,
   getScoreHistory,
   DashboardStats,
+  BadgeInfo,
+  StreakInfo,
   RecentEvaluation,
   ScoreDataPoint,
 } from "../api/client";
@@ -299,6 +306,11 @@ function AuthenticatedDashboard() {
     <>
       {/* Stats Summary */}
       <StatsBar stats={stats ?? null} loading={statsLoading} />
+
+      {/* Streak & Badges */}
+      {!statsLoading && stats && (
+        <StreakAndBadges streak={stats.streak} badges={stats.badges} />
+      )}
 
       {/* Score Trend Chart */}
       {(historyLoading || (scoreHistory && scoreHistory.length > 1)) && (
@@ -590,5 +602,128 @@ function RecentEvaluationsTable({
         </TableBody>
       </Table>
     </TableContainer>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Streak & Badges Widget
+// ---------------------------------------------------------------------------
+
+const BADGE_ICONS: Record<string, React.ReactNode> = {
+  emoji_events: <EmojiEventsIcon />,
+  local_fire_department: <LocalFireDepartmentIcon />,
+  star: <StarIcon />,
+  explore: <ExploreIcon />,
+  trending_up: <TrendingUpIcon />,
+  timer: <TimerIcon />,
+};
+
+function StreakAndBadges({
+  streak,
+  badges,
+}: {
+  streak: StreakInfo | null;
+  badges: BadgeInfo[];
+}) {
+  const unlockedCount = badges.filter((b) => b.unlocked).length;
+
+  return (
+    <Grid container spacing={3} sx={{ mb: 3 }}>
+      {/* Streak Card */}
+      <Grid item xs={12} sm={4}>
+        <Card sx={{ height: "100%" }}>
+          <CardContent sx={{ textAlign: "center", py: 3 }}>
+            <LocalFireDepartmentIcon
+              sx={{
+                fontSize: 48,
+                color: streak?.streak_active ? "warning.main" : "action.disabled",
+                mb: 1,
+              }}
+            />
+            <Typography variant="h3" fontWeight={700} color={streak?.streak_active ? "warning.main" : "text.secondary"}>
+              {streak?.current_streak ?? 0}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              Day Streak
+            </Typography>
+            <Chip
+              label={`Best: ${streak?.longest_streak ?? 0} days`}
+              size="small"
+              variant="outlined"
+            />
+            {streak && !streak.streak_active && streak.current_streak > 0 && (
+              <Typography variant="caption" display="block" color="error" sx={{ mt: 1 }}>
+                Practice today to keep your streak!
+              </Typography>
+            )}
+          </CardContent>
+        </Card>
+      </Grid>
+
+      {/* Badges Card */}
+      <Grid item xs={12} sm={8}>
+        <Card sx={{ height: "100%" }}>
+          <CardContent>
+            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+              <EmojiEventsIcon sx={{ color: "warning.main", fontSize: 22 }} />
+              <Typography variant="h6" fontWeight={600}>
+                Achievements
+              </Typography>
+              <Chip
+                label={`${unlockedCount}/${badges.length}`}
+                size="small"
+                color={unlockedCount === badges.length ? "success" : "default"}
+              />
+            </Stack>
+            <Grid container spacing={1.5}>
+              {badges.map((badge) => (
+                <Grid item xs={6} sm={4} key={badge.id}>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 1.5,
+                      textAlign: "center",
+                      border: 1,
+                      borderColor: badge.unlocked ? "warning.main" : "divider",
+                      borderRadius: 2,
+                      bgcolor: badge.unlocked ? "warning.50" : "action.hover",
+                      opacity: badge.unlocked ? 1 : 0.6,
+                      transition: "all 0.2s",
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        color: badge.unlocked ? "warning.main" : "action.disabled",
+                        mb: 0.5,
+                      }}
+                    >
+                      {badge.unlocked
+                        ? (BADGE_ICONS[badge.icon] || <EmojiEventsIcon />)
+                        : <LockIcon />}
+                    </Box>
+                    <Typography
+                      variant="caption"
+                      fontWeight={600}
+                      display="block"
+                      noWrap
+                    >
+                      {badge.name}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                      sx={{ fontSize: 10, lineHeight: 1.2, mt: 0.25 }}
+                    >
+                      {badge.description}
+                    </Typography>
+                  </Paper>
+                </Grid>
+              ))}
+            </Grid>
+          </CardContent>
+        </Card>
+      </Grid>
+    </Grid>
   );
 }

@@ -144,6 +144,15 @@ class User(Base):
     plan_tier = Column(String(20), default="free")  # free, pro
     is_moderator = Column(Boolean, default=False)  # Can review community submissions
     email_notifications = Column(Boolean, default=True)  # Opt-out for email notifications
+
+    # Practice streaks — updated on every evaluation completion
+    current_streak = Column(Integer, default=0)
+    longest_streak = Column(Integer, default=0)
+    last_practice_date = Column(DateTime(timezone=True))  # UTC date of last evaluation
+
+    # Achievement badges — JSONB array of {id, name, unlocked_at}
+    badges = Column(JSONB, default=list)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     last_login = Column(DateTime(timezone=True))
     is_active = Column(Boolean, default=True)

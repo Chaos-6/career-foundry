@@ -644,12 +644,30 @@ export async function getSharedEvaluation(
 // Dashboard endpoints
 // ---------------------------------------------------------------------------
 
+export interface BadgeInfo {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  unlocked: boolean;
+  unlocked_at: string | null;
+}
+
+export interface StreakInfo {
+  current_streak: number;
+  longest_streak: number;
+  last_practice_date: string | null;
+  streak_active: boolean;
+}
+
 export interface DashboardStats {
   total_evaluations: number;
   average_score: number | null;
   best_score: number | null;
   total_answers: number;
   evaluations_this_month: number;
+  streak: StreakInfo | null;
+  badges: BadgeInfo[];
 }
 
 export interface RecentEvaluation {
