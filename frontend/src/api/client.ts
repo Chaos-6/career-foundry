@@ -641,6 +641,32 @@ export async function getSharedEvaluation(
 }
 
 // ---------------------------------------------------------------------------
+// Inline Suggestions
+// ---------------------------------------------------------------------------
+
+export interface SuggestionItem {
+  section: string;
+  suggestion: string;
+  example: string;
+}
+
+export interface SuggestionsResponse {
+  suggestions: SuggestionItem[];
+  message?: string;
+  input_tokens?: number;
+  output_tokens?: number;
+}
+
+export async function getEvaluationSuggestions(
+  evaluationId: string
+): Promise<SuggestionsResponse> {
+  const { data } = await api.post<SuggestionsResponse>(
+    `/api/v1/evaluations/${evaluationId}/suggestions`
+  );
+  return data;
+}
+
+// ---------------------------------------------------------------------------
 // Dashboard endpoints
 // ---------------------------------------------------------------------------
 

@@ -4,6 +4,7 @@
  * Polls the evaluation status until it transitions to 'completed' or 'failed'.
  * Then renders:
  * - 6-dimension score bars
+ * - AI-powered improvement suggestions for weak dimensions (≤3)
  * - Full evaluation markdown
  * - PDF download button
  * - "Revise & Re-Evaluate" inline editor
@@ -44,6 +45,9 @@ import ShareIcon from "@mui/icons-material/Share";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
 import CloseIcon from "@mui/icons-material/Close";
 import BookmarkAddIcon from "@mui/icons-material/BookmarkAdd";
+import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
+import LightbulbIcon from "@mui/icons-material/Lightbulb";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
 import {
   getEvaluation,
@@ -53,6 +57,8 @@ import {
   shareEvaluation,
   revokeShare,
   createTemplate,
+  getEvaluationSuggestions,
+  SuggestionItem,
 } from "../api/client";
 import ScoreBar from "../components/ScoreBar";
 import SimpleMarkdown from "../components/SimpleMarkdown";
@@ -82,6 +88,13 @@ export default function EvaluationDetail() {
   // Save as template state
   const [savedAsTemplate, setSavedAsTemplate] = useState(false);
   const [savingTemplate, setSavingTemplate] = useState(false);
+
+  // Inline suggestions state
+  const [suggestions, setSuggestions] = useState<SuggestionItem[]>([]);
+  const [suggestionsMessage, setSuggestionsMessage] = useState<string | null>(null);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [suggestionsLoaded, setSuggestionsLoaded] = useState(false);
+  const [suggestionsExpanded, setSuggestionsExpanded] = useState(true);
 
   const {
     data: evaluation,
@@ -216,6 +229,34 @@ export default function EvaluationDetail() {
       setSavingTemplate(false);
     }
   };
+
+  // Load AI-powered suggestions for weak dimensions
+  const handleLoadSuggestions = async () => {
+    if (!evaluation || suggestionsLoaded) return;
+    setLoadingSuggestions(true);
+    try {
+      const result = await getEvaluationSuggestions(evaluation.id);
+      setSuggestions(result.suggestions);
+      setSuggestionsMessage(result.message || null);
+      setSuggestionsLoaded(true);
+    } catch {
+      setSuggestionsMessage("Failed to load suggestions. Please try again.");
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
+  // Check if any dimension scored ≤3 (suggestions are relevant)
+  const hasWeakDimensions =
+    evaluation?.status === "completed" &&
+    [
+      evaluation.situation_score,
+      evaluation.task_score,
+      evaluation.action_score,
+      evaluation.result_score,
+      evaluation.engagement_score,
+      evaluation.overall_score,
+    ].some((score) => score !== null && score <= 3);
 
   if (isLoading) {
     return <PageLoader message="Loading evaluation..." />;
@@ -614,6 +655,118 @@ export default function EvaluationDetail() {
                     </Stack>
                   </Box>
                 )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* AI Improvement Suggestions */}
+          {hasWeakDimensions && (
+            <Card
+              sx={{
+                mt: 2,
+                border: 1,
+                borderColor: "info.light",
+                bgcolor: "info.50",
+              }}
+            >
+              <CardContent>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  sx={{ mb: suggestionsLoaded && suggestions.length > 0 ? 1 : 0 }}
+                >
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <AutoFixHighIcon color="info" />
+                    <Typography variant="h6" color="info.dark">
+                      How to Improve
+                    </Typography>
+                  </Stack>
+                  {!suggestionsLoaded && (
+                    <Button
+                      size="small"
+                      variant="contained"
+                      color="info"
+                      startIcon={
+                        loadingSuggestions ? (
+                          <CircularProgress size={16} color="inherit" />
+                        ) : (
+                          <LightbulbIcon />
+                        )
+                      }
+                      onClick={handleLoadSuggestions}
+                      disabled={loadingSuggestions}
+                    >
+                      {loadingSuggestions ? "Thinking..." : "Get AI Tips"}
+                    </Button>
+                  )}
+                  {suggestionsLoaded && suggestions.length > 0 && (
+                    <Button
+                      size="small"
+                      onClick={() => setSuggestionsExpanded(!suggestionsExpanded)}
+                      endIcon={
+                        <ExpandMoreIcon
+                          sx={{
+                            transform: suggestionsExpanded
+                              ? "rotate(180deg)"
+                              : "rotate(0deg)",
+                            transition: "transform 0.2s",
+                          }}
+                        />
+                      }
+                    >
+                      {suggestionsExpanded ? "Hide" : "Show"}
+                    </Button>
+                  )}
+                </Stack>
+
+                {!suggestionsLoaded && !loadingSuggestions && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    Get targeted AI tips for your weakest dimensions.
+                  </Typography>
+                )}
+
+                {suggestionsMessage && suggestions.length === 0 && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    {suggestionsMessage}
+                  </Typography>
+                )}
+
+                <Collapse in={suggestionsExpanded}>
+                  <Stack spacing={1.5} sx={{ mt: suggestions.length > 0 ? 1 : 0 }}>
+                    {suggestions.map((s, i) => (
+                      <Paper
+                        key={i}
+                        elevation={0}
+                        sx={{ p: 1.5, bgcolor: "background.paper", borderRadius: 1 }}
+                      >
+                        <Chip
+                          label={s.section.charAt(0).toUpperCase() + s.section.slice(1)}
+                          size="small"
+                          color="info"
+                          sx={{ mb: 0.5, fontWeight: 600 }}
+                        />
+                        <Typography variant="body2" sx={{ mb: 0.5 }}>
+                          {s.suggestion}
+                        </Typography>
+                        {s.example && (
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{
+                              fontStyle: "italic",
+                              pl: 1.5,
+                              borderLeft: 2,
+                              borderColor: "info.light",
+                            }}
+                          >
+                            {s.example}
+                          </Typography>
+                        )}
+                      </Paper>
+                    ))}
+                  </Stack>
+                </Collapse>
               </CardContent>
             </Card>
           )}

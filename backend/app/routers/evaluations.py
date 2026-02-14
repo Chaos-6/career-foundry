@@ -13,6 +13,7 @@ Tier enforcement:
   Anonymous users (no auth) are not allowed to create evaluations.
 """
 
+import asyncio
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
@@ -33,6 +34,8 @@ from app.schemas.evaluations import (
     EvaluationResponse,
     ShareResponse,
     SharedEvaluationResponse,
+    SuggestionItem,
+    SuggestionsResponse,
 )
 from app.services.evaluation_pipeline import run_evaluation_pipeline
 from app.rate_limit import rate_limit
@@ -227,6 +230,95 @@ async def download_evaluation_pdf(
         content=pdf_bytes,
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+# ---------------------------------------------------------------------------
+# Inline Suggestions endpoint
+# ---------------------------------------------------------------------------
+
+
+@router.post(
+    "/{evaluation_id}/suggestions",
+    response_model=SuggestionsResponse,
+    dependencies=[Depends(rate_limit(max_requests=10, window_seconds=60))],
+)
+async def get_suggestions(
+    evaluation_id: UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Generate AI-powered improvement suggestions for weak dimensions.
+
+    Only works for completed evaluations with at least one dimension
+    scoring ≤3. Returns targeted, section-specific tips using Claude
+    with a tight token budget (max_tokens=1000).
+
+    Rate limited to 10/min since each call triggers a Claude API request.
+    """
+    # Load evaluation
+    result = await db.execute(
+        select(Evaluation).where(Evaluation.id == evaluation_id)
+    )
+    evaluation = result.scalar_one_or_none()
+
+    if not evaluation:
+        raise HTTPException(status_code=404, detail="Evaluation not found")
+
+    if evaluation.status != "completed":
+        raise HTTPException(
+            status_code=400,
+            detail="Suggestions are only available for completed evaluations.",
+        )
+
+    # Check that at least one dimension is ≤3
+    scores = {
+        "situation": evaluation.situation_score,
+        "task": evaluation.task_score,
+        "action": evaluation.action_score,
+        "result": evaluation.result_score,
+        "engagement": evaluation.engagement_score,
+        "overall": evaluation.overall_score,
+    }
+
+    weak_dimensions = {k: v for k, v in scores.items() if v is not None and v <= 3}
+    if not weak_dimensions:
+        return SuggestionsResponse(
+            suggestions=[],
+            message="All dimensions scored above 3 — great job! No suggestions needed.",
+        )
+
+    # Get the answer text for context
+    version_result = await db.execute(
+        select(AnswerVersion).where(AnswerVersion.id == evaluation.answer_version_id)
+    )
+    version = version_result.scalar_one_or_none()
+
+    if not version:
+        raise HTTPException(status_code=404, detail="Answer version not found.")
+
+    # Generate suggestions via Claude (run in thread to avoid blocking)
+    from app.services.suggestions import SuggestionService
+
+    service = SuggestionService()
+    suggestion_result = await asyncio.to_thread(
+        service.generate,
+        answer_text=version.answer_text,
+        scores=scores,
+        evaluation_markdown=evaluation.evaluation_markdown or "",
+    )
+
+    return SuggestionsResponse(
+        suggestions=[
+            SuggestionItem(
+                section=s["section"],
+                suggestion=s["suggestion"],
+                example=s["example"],
+            )
+            for s in suggestion_result.suggestions
+        ],
+        input_tokens=suggestion_result.input_tokens,
+        output_tokens=suggestion_result.output_tokens,
     )
 
 

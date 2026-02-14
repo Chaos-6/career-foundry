@@ -92,6 +92,27 @@ class ShareResponse(BaseModel):
     share_url: str
 
 
+# ---------------------------------------------------------------------------
+# Suggestions schemas
+# ---------------------------------------------------------------------------
+
+class SuggestionItem(BaseModel):
+    """A single improvement suggestion for a weak STAR dimension."""
+
+    section: str  # "situation", "task", "action", "result", "engagement", "overall"
+    suggestion: str  # Actionable improvement tip (2-3 sentences)
+    example: str  # Concrete example of improvement (1-2 sentences)
+
+
+class SuggestionsResponse(BaseModel):
+    """Response from the inline suggestions endpoint."""
+
+    suggestions: list[SuggestionItem]
+    message: Optional[str] = None  # e.g. "All scores above 3 — no suggestions needed"
+    input_tokens: Optional[int] = None
+    output_tokens: Optional[int] = None
+
+
 class SharedEvaluationResponse(BaseModel):
     """Read-only public view of a shared evaluation.
 
