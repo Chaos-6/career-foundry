@@ -1,7 +1,7 @@
 """
 SQLAlchemy models for the Behavioral Interview Answer Evaluator.
 
-8 tables:
+9 tables:
 1. CompanyProfile        — 22+ companies with guiding principles (JSONB)
 2. Question              — 100+ behavioral questions tagged by role/competency/difficulty
 3. User                  — Accounts with auth and preferences
@@ -9,7 +9,8 @@ SQLAlchemy models for the Behavioral Interview Answer Evaluator.
 5. AnswerVersion         — Revisions of an answer (v1, v2, ...) for improvement tracking
 6. Evaluation            — Claude's scored evaluation of an answer version
 7. MockSession           — Timed practice session metadata
-8. CoachingRelationship  — Student↔coach links with invite workflow
+8. AnswerTemplate        — Reusable STAR answer frameworks per user
+9. CoachingRelationship  — Student↔coach links with invite workflow
 
 Key patterns:
 - UUID primary keys everywhere
@@ -150,6 +151,7 @@ class User(Base):
     # Relationships
     answers = relationship("Answer", back_populates="user")
     mock_sessions = relationship("MockSession", back_populates="user")
+    templates = relationship("AnswerTemplate", back_populates="user")
 
 
 # ---------------------------------------------------------------------------
@@ -301,6 +303,43 @@ class MockSession(Base):
 # ---------------------------------------------------------------------------
 # Coaching Relationships
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Answer Templates
+# ---------------------------------------------------------------------------
+
+class AnswerTemplate(Base):
+    """A reusable STAR answer framework saved by a user.
+
+    Templates let users save well-structured answers as starting points
+    for future evaluations. Two creation paths:
+    1. From scratch — user writes a template in the template library
+    2. From evaluated answer — "Save as Template" on EvaluationDetail
+
+    Tags follow the same JSONB array pattern as Questions for consistency.
+    """
+
+    __tablename__ = "answer_templates"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    name = Column(String(255), nullable=False)
+    template_text = Column(Text, nullable=False)
+    role_tags = Column(JSONB, default=list)       # ["MLE", "PM", "TPM", "EM"]
+    competency_tags = Column(JSONB, default=list)  # ["leadership", "conflict"]
+    is_default = Column(Boolean, default=False)    # Pinned/favorite template
+    usage_count = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # Relationships
+    user = relationship("User", back_populates="templates")
+
 
 class CoachingRelationship(Base):
     """A student↔coach link with invite workflow.

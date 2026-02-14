@@ -37,6 +37,7 @@ import InsightsIcon from "@mui/icons-material/Insights";
 import PaymentIcon from "@mui/icons-material/Payment";
 import GavelIcon from "@mui/icons-material/Gavel";
 import GroupsIcon from "@mui/icons-material/Groups";
+import DescriptionIcon from "@mui/icons-material/Description";
 import LoginIcon from "@mui/icons-material/Login";
 import LogoutIcon from "@mui/icons-material/Logout";
 import { useAuth } from "../hooks/useAuth";
@@ -49,6 +50,7 @@ const BASE_NAV_ITEMS = [
   { path: "/mock", label: "Mock Interview", icon: <TimerIcon /> },
   { path: "/generator", label: "AI Generator", icon: <AutoAwesomeIcon /> },
   { path: "/questions", label: "Question Bank", icon: <QuizIcon /> },
+  { path: "/templates", label: "Templates", icon: <DescriptionIcon /> },
   { path: "/coaching", label: "Coaching", icon: <GroupsIcon /> },
   { path: "/analytics", label: "Analytics", icon: <InsightsIcon /> },
   { path: "/pricing", label: "Pricing", icon: <PaymentIcon /> },

@@ -11,6 +11,7 @@
  * - /questions        Question Bank (public — browsing is free)
  * - /moderation       Moderation Queue (protected — moderator-only API)
  * - /coaching         Coach Dashboard (protected — invite/manage students)
+ * - /templates        Answer Templates (protected — manage reusable STAR frameworks)
  * - /analytics        Advanced Analytics (protected)
  * - /shared/:token    Shared evaluation (public, read-only)
  * - /pricing          Pricing/Plans (public)
@@ -41,6 +42,7 @@ import PricingPage from "./pages/PricingPage";
 import ModerationQueue from "./pages/ModerationQueue";
 import CoachDashboard from "./pages/CoachDashboard";
 import SharedEvaluation from "./pages/SharedEvaluation";
+import Templates from "./pages/Templates";
 
 function App() {
   return (
@@ -127,6 +129,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <CoachDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/templates"
+            element={
+              <ProtectedRoute>
+                <Templates />
               </ProtectedRoute>
             }
           />

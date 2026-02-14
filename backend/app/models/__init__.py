@@ -2,6 +2,7 @@
 
 from app.models.models import (
     Answer,
+    AnswerTemplate,
     AnswerVersion,
     CoachingRelationship,
     CompanyProfile,
@@ -17,6 +18,7 @@ __all__ = [
     "User",
     "Answer",
     "AnswerVersion",
+    "AnswerTemplate",
     "Evaluation",
     "MockSession",
     "CoachingRelationship",

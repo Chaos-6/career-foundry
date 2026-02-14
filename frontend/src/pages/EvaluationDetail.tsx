@@ -43,6 +43,7 @@ import SendIcon from "@mui/icons-material/Send";
 import ShareIcon from "@mui/icons-material/Share";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
 import CloseIcon from "@mui/icons-material/Close";
+import BookmarkAddIcon from "@mui/icons-material/BookmarkAdd";
 
 import {
   getEvaluation,
@@ -51,6 +52,7 @@ import {
   createEvaluation,
   shareEvaluation,
   revokeShare,
+  createTemplate,
 } from "../api/client";
 import ScoreBar from "../components/ScoreBar";
 import SimpleMarkdown from "../components/SimpleMarkdown";
@@ -76,6 +78,10 @@ export default function EvaluationDetail() {
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [sharing, setSharing] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Save as template state
+  const [savedAsTemplate, setSavedAsTemplate] = useState(false);
+  const [savingTemplate, setSavingTemplate] = useState(false);
 
   const {
     data: evaluation,
@@ -191,6 +197,23 @@ export default function EvaluationDetail() {
       refetch();
     } catch {
       // Silently fail
+    }
+  };
+
+  // Save as template
+  const handleSaveAsTemplate = async () => {
+    if (!evaluation?.answer_text) return;
+    setSavingTemplate(true);
+    try {
+      await createTemplate({
+        name: `Template from evaluation ${new Date().toLocaleDateString()}`,
+        template_text: evaluation.answer_text,
+      });
+      setSavedAsTemplate(true);
+    } catch {
+      // Silently fail — button stays available for retry
+    } finally {
+      setSavingTemplate(false);
     }
   };
 
@@ -363,6 +386,25 @@ export default function EvaluationDetail() {
               ? "Copy Link"
               : "Share"}
           </Button>
+          {evaluation.answer_text && (
+            <Button
+              variant="outlined"
+              startIcon={
+                savingTemplate ? (
+                  <CircularProgress size={18} color="inherit" />
+                ) : savedAsTemplate ? (
+                  <CheckIcon />
+                ) : (
+                  <BookmarkAddIcon />
+                )
+              }
+              onClick={handleSaveAsTemplate}
+              disabled={savingTemplate || savedAsTemplate}
+              color={savedAsTemplate ? "success" : "primary"}
+            >
+              {savedAsTemplate ? "Saved!" : "Save as Template"}
+            </Button>
+          )}
           {(shareUrl || evaluation.share_token) && (
             <Button
               variant="text"

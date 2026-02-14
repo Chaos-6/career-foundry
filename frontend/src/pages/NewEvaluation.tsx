@@ -37,11 +37,14 @@ import ShuffleIcon from "@mui/icons-material/Shuffle";
 import {
   listCompanies,
   listQuestions,
+  listTemplates,
+  getTemplate,
   getRandomQuestion,
   createAnswer,
   createEvaluation,
   Company,
   Question,
+  AnswerTemplate,
 } from "../api/client";
 import UpgradePrompt, { isTierLimitError } from "../components/UpgradePrompt";
 import VoiceInput from "../components/VoiceInput";
@@ -79,6 +82,14 @@ export default function NewEvaluation() {
   const { data: companies = [], isLoading: loadingCompanies } = useQuery({
     queryKey: ["companies"],
     queryFn: listCompanies,
+  });
+
+  // Templates query — only fetch if user might be authenticated
+  const { data: templates = [] } = useQuery({
+    queryKey: ["templates"],
+    queryFn: listTemplates,
+    // Silently fail for unauthenticated users
+    retry: false,
   });
 
   const { data: questionList, isLoading: loadingQuestions } = useQuery({
@@ -358,6 +369,39 @@ export default function NewEvaluation() {
               Paste your answer using the STAR framework: Situation, Task,
               Action, Result. Aim for 200-400 words (about 2-3 minutes spoken).
             </Typography>
+
+            {/* Template selector */}
+            {templates.length > 0 && (
+              <FormControl fullWidth sx={{ mb: 2 }} size="small">
+                <InputLabel>Load from Template</InputLabel>
+                <Select
+                  value=""
+                  label="Load from Template"
+                  onChange={async (e) => {
+                    const templateId = e.target.value as string;
+                    if (!templateId) return;
+                    try {
+                      const tmpl = await getTemplate(templateId);
+                      setAnswerText(tmpl.template_text);
+                    } catch {
+                      // Silently fail — user can still type manually
+                    }
+                  }}
+                >
+                  {templates.map((t: AnswerTemplate) => (
+                    <MenuItem key={t.id} value={t.id}>
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <Typography variant="body2">{t.name}</Typography>
+                        {t.is_default && (
+                          <Chip label="Default" size="small" color="primary" variant="outlined" />
+                        )}
+                      </Stack>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+
             <TextField
               fullWidth
               multiline

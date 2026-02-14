@@ -838,4 +838,63 @@ export async function createPortalSession(): Promise<{ portal_url: string }> {
   return data;
 }
 
+// ---------------------------------------------------------------------------
+// Answer Template endpoints
+// ---------------------------------------------------------------------------
+
+export interface AnswerTemplate {
+  id: string;
+  user_id: string;
+  name: string;
+  template_text: string;
+  role_tags: string[];
+  competency_tags: string[];
+  is_default: boolean;
+  usage_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function listTemplates(): Promise<AnswerTemplate[]> {
+  const { data } = await api.get<AnswerTemplate[]>("/api/v1/templates");
+  return data;
+}
+
+export async function getTemplate(id: string): Promise<AnswerTemplate> {
+  const { data } = await api.get<AnswerTemplate>(`/api/v1/templates/${id}`);
+  return data;
+}
+
+export async function createTemplate(payload: {
+  name: string;
+  template_text: string;
+  role_tags?: string[];
+  competency_tags?: string[];
+  is_default?: boolean;
+}): Promise<AnswerTemplate> {
+  const { data } = await api.post<AnswerTemplate>("/api/v1/templates", payload);
+  return data;
+}
+
+export async function updateTemplate(
+  id: string,
+  payload: {
+    name?: string;
+    template_text?: string;
+    role_tags?: string[];
+    competency_tags?: string[];
+    is_default?: boolean;
+  }
+): Promise<AnswerTemplate> {
+  const { data } = await api.put<AnswerTemplate>(
+    `/api/v1/templates/${id}`,
+    payload
+  );
+  return data;
+}
+
+export async function deleteTemplate(id: string): Promise<void> {
+  await api.delete(`/api/v1/templates/${id}`);
+}
+
 export default api;
