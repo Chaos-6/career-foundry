@@ -110,3 +110,24 @@ class AnswerComparisonResponse(AnswerResponse):
     """An answer with version score summaries for side-by-side comparison."""
 
     version_scores: list[VersionScoreSummary] = []
+
+
+# ---------------------------------------------------------------------------
+# Import schemas
+# ---------------------------------------------------------------------------
+
+class ImportAnswerItem(BaseModel):
+    """A single answer created during bulk import."""
+
+    answer_id: UUID
+    question_text: Optional[str] = None
+    word_count: int
+
+
+class ImportResponse(BaseModel):
+    """Response from the bulk import endpoint."""
+
+    imported_count: int
+    total_found: int
+    answers: list[ImportAnswerItem]
+    errors: list[str] = []

@@ -2,7 +2,7 @@
 Answer endpoints.
 
 Handles creating answers with their first version, adding new versions
-(revisions), and retrieving answer details.
+(revisions), retrieving answer details, and bulk import from files.
 
 Auth is optional — the evaluation flow works without authentication
 (user_id=None), but logged-in users get their answers linked to their account.
@@ -11,20 +11,23 @@ Auth is optional — the evaluation flow works without authentication
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
-from app.dependencies import get_optional_user
+from app.dependencies import get_current_user, get_optional_user
 from app.models import Answer, AnswerVersion, CompanyProfile, Evaluation, Question, User
+from app.rate_limit import rate_limit
 from app.schemas.answers import (
     AnswerComparisonResponse,
     AnswerCreateRequest,
     AnswerDetailResponse,
     AnswerResponse,
     AnswerVersionResponse,
+    ImportAnswerItem,
+    ImportResponse,
     VersionCreateRequest,
     VersionScoreSummary,
 )
@@ -231,4 +234,122 @@ async def compare_versions(
         created_at=answer.created_at,
         updated_at=answer.updated_at,
         version_scores=version_scores,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Bulk Import endpoint
+# ---------------------------------------------------------------------------
+
+MAX_FILE_SIZE = 100 * 1024  # 100KB
+
+
+@router.post(
+    "/import",
+    response_model=ImportResponse,
+    dependencies=[Depends(rate_limit(max_requests=5, window_seconds=60))],
+)
+async def import_answers(
+    file: UploadFile = File(...),
+    target_company_id: UUID = Form(...),
+    target_role: str = Form(...),
+    experience_level: str = Form(...),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Bulk import answers from a .txt or .md file.
+
+    Parses the file for STAR-formatted answers separated by '---' or '==='.
+    Each answer block can optionally start with a question header:
+
+        ## Question: Tell me about a time...
+        Situation: ...
+        Task: ...
+        Action: ...
+        Result: ...
+
+    Creates an Answer + AnswerVersion for each successfully parsed block.
+    Requires authentication and company/role context.
+
+    Max file size: 100KB. Accepted types: .txt, .md
+    """
+    # Validate file type
+    filename = file.filename or ""
+    if not filename.lower().endswith((".txt", ".md")):
+        raise HTTPException(
+            status_code=422,
+            detail="Only .txt and .md files are supported.",
+        )
+
+    # Read and validate file size
+    content_bytes = await file.read()
+    if len(content_bytes) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=422,
+            detail=f"File exceeds maximum size of {MAX_FILE_SIZE // 1024}KB.",
+        )
+
+    try:
+        content = content_bytes.decode("utf-8")
+    except UnicodeDecodeError:
+        raise HTTPException(
+            status_code=422,
+            detail="File must be UTF-8 encoded text.",
+        )
+
+    # Validate company exists
+    company_result = await db.execute(
+        select(CompanyProfile).where(CompanyProfile.id == target_company_id)
+    )
+    if not company_result.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Company not found")
+
+    # Parse the file
+    from app.services.import_parser import parse_import_file
+
+    parse_result = parse_import_file(content)
+
+    if not parse_result.answers and parse_result.errors:
+        raise HTTPException(
+            status_code=422,
+            detail=f"No valid answers found. {'; '.join(parse_result.errors)}",
+        )
+
+    # Create Answer + AnswerVersion for each parsed answer
+    created_items = []
+    for parsed in parse_result.answers:
+        answer = Answer(
+            user_id=user.id,
+            custom_question_text=parsed.question_text,
+            target_company_id=target_company_id,
+            target_role=target_role,
+            experience_level=experience_level,
+            version_count=1,
+        )
+        db.add(answer)
+        await db.flush()  # Get the answer.id
+
+        version = AnswerVersion(
+            answer_id=answer.id,
+            version_number=1,
+            answer_text=parsed.answer_text,
+            word_count=parsed.word_count,
+        )
+        db.add(version)
+
+        created_items.append(
+            ImportAnswerItem(
+                answer_id=answer.id,
+                question_text=parsed.question_text,
+                word_count=parsed.word_count,
+            )
+        )
+
+    await db.commit()
+
+    return ImportResponse(
+        imported_count=len(created_items),
+        total_found=parse_result.total_found,
+        answers=created_items,
+        errors=parse_result.errors,
     )

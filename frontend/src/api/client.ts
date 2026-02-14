@@ -573,6 +573,43 @@ export async function createVersion(
 }
 
 // ---------------------------------------------------------------------------
+// Bulk Import
+// ---------------------------------------------------------------------------
+
+export interface ImportAnswerItem {
+  answer_id: string;
+  question_text: string | null;
+  word_count: number;
+}
+
+export interface ImportResponse {
+  imported_count: number;
+  total_found: number;
+  answers: ImportAnswerItem[];
+  errors: string[];
+}
+
+export async function importAnswers(
+  file: File,
+  targetCompanyId: string,
+  targetRole: string,
+  experienceLevel: string
+): Promise<ImportResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("target_company_id", targetCompanyId);
+  formData.append("target_role", targetRole);
+  formData.append("experience_level", experienceLevel);
+
+  const { data } = await api.post<ImportResponse>(
+    "/api/v1/answers/import",
+    formData,
+    { headers: { "Content-Type": "multipart/form-data" } }
+  );
+  return data;
+}
+
+// ---------------------------------------------------------------------------
 // Evaluation endpoints
 // ---------------------------------------------------------------------------
 

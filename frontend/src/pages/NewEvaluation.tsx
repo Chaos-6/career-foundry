@@ -12,7 +12,7 @@
  * Uses plain useState for form state, validation on submit.
  */
 
-import React, { useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import {
@@ -23,6 +23,7 @@ import {
   CardContent,
   Chip,
   CircularProgress,
+  Collapse,
   FormControl,
   InputLabel,
   MenuItem,
@@ -33,6 +34,8 @@ import {
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 import ShuffleIcon from "@mui/icons-material/Shuffle";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 
 import {
   listCompanies,
@@ -42,9 +45,11 @@ import {
   getRandomQuestion,
   createAnswer,
   createEvaluation,
+  importAnswers,
   Company,
   Question,
   AnswerTemplate,
+  ImportResponse,
 } from "../api/client";
 import UpgradePrompt, { isTierLimitError } from "../components/UpgradePrompt";
 import VoiceInput from "../components/VoiceInput";
@@ -77,6 +82,13 @@ export default function NewEvaluation() {
     currentUsage?: number;
     limit?: number;
   }>({});
+
+  // Import state
+  const [importResult, setImportResult] = useState<ImportResponse | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Data queries
   const { data: companies = [], isLoading: loadingCompanies } = useQuery({
@@ -179,6 +191,68 @@ export default function NewEvaluation() {
 
     submitMutation.mutate();
   };
+
+  // Import handlers
+  const handleImportFile = useCallback(
+    async (file: File) => {
+      // Validate context first
+      if (!companyId || !role || !level) {
+        setImportError("Please select company, role, and experience level before importing.");
+        return;
+      }
+
+      const validExts = [".txt", ".md"];
+      const ext = file.name.toLowerCase().slice(file.name.lastIndexOf("."));
+      if (!validExts.includes(ext)) {
+        setImportError("Only .txt and .md files are supported.");
+        return;
+      }
+
+      if (file.size > 100 * 1024) {
+        setImportError("File exceeds 100KB limit.");
+        return;
+      }
+
+      setImporting(true);
+      setImportError(null);
+      setImportResult(null);
+
+      try {
+        const result = await importAnswers(file, companyId, role, level);
+        setImportResult(result);
+      } catch (err: any) {
+        const detail = err?.response?.data?.detail;
+        setImportError(
+          typeof detail === "string"
+            ? detail
+            : detail?.message || "Import failed. Please try again."
+        );
+      } finally {
+        setImporting(false);
+      }
+    },
+    [companyId, role, level]
+  );
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setDragOver(false);
+      const file = e.dataTransfer.files[0];
+      if (file) handleImportFile(file);
+    },
+    [handleImportFile]
+  );
+
+  const handleFileSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) handleImportFile(file);
+      // Reset input so same file can be re-selected
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    },
+    [handleImportFile]
+  );
 
   const wordCount = answerText.trim()
     ? answerText.trim().split(/\s+/).length
@@ -440,6 +514,107 @@ export default function NewEvaluation() {
                 {wordCount > 500 && " — consider trimming for interview delivery"}
               </Typography>
             </Box>
+          </CardContent>
+        </Card>
+
+        {/* Bulk Import */}
+        <Card variant="outlined">
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Or Import from File
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Upload a .txt or .md file with one or more STAR answers.
+              Separate multiple answers with --- or ===. Optionally prefix
+              each with "## Question: ..."
+            </Typography>
+
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".txt,.md"
+              style={{ display: "none" }}
+              onChange={handleFileSelect}
+            />
+
+            {/* Drop zone */}
+            <Box
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOver(true);
+              }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              sx={{
+                border: 2,
+                borderStyle: "dashed",
+                borderColor: dragOver ? "primary.main" : "divider",
+                borderRadius: 2,
+                p: 3,
+                textAlign: "center",
+                cursor: "pointer",
+                bgcolor: dragOver ? "primary.50" : "transparent",
+                transition: "all 0.2s",
+                "&:hover": {
+                  borderColor: "primary.light",
+                  bgcolor: "action.hover",
+                },
+              }}
+            >
+              {importing ? (
+                <CircularProgress size={32} />
+              ) : (
+                <>
+                  <UploadFileIcon
+                    sx={{ fontSize: 40, color: "text.secondary", mb: 1 }}
+                  />
+                  <Typography variant="body2" color="text.secondary">
+                    Drag & drop a file here, or click to browse
+                  </Typography>
+                  <Typography variant="caption" color="text.disabled">
+                    .txt or .md — max 100KB
+                  </Typography>
+                </>
+              )}
+            </Box>
+
+            {/* Import error */}
+            {importError && (
+              <Alert severity="error" sx={{ mt: 2 }} onClose={() => setImportError(null)}>
+                {importError}
+              </Alert>
+            )}
+
+            {/* Import result */}
+            <Collapse in={!!importResult}>
+              {importResult && (
+                <Alert
+                  severity="success"
+                  icon={<CheckCircleIcon />}
+                  sx={{ mt: 2 }}
+                >
+                  <Typography variant="subtitle2">
+                    Imported {importResult.imported_count} of{" "}
+                    {importResult.total_found} answer
+                    {importResult.total_found !== 1 ? "s" : ""}
+                  </Typography>
+                  {importResult.answers.map((a) => (
+                    <Typography key={a.answer_id} variant="body2">
+                      • {a.question_text || "Custom answer"} ({a.word_count} words)
+                    </Typography>
+                  ))}
+                  {importResult.errors.length > 0 && (
+                    <Box sx={{ mt: 1 }}>
+                      <Typography variant="caption" color="warning.main">
+                        Warnings: {importResult.errors.join("; ")}
+                      </Typography>
+                    </Box>
+                  )}
+                </Alert>
+              )}
+            </Collapse>
           </CardContent>
         </Card>
 
