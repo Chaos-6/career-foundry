@@ -1,17 +1,18 @@
 /**
- * Dashboard page — personalized landing hub.
- *
- * Shows different content based on auth state:
+ * Dashboard page — the product's front door.
  *
  * Unauthenticated:
- * - 4 feature cards (Evaluate, Mock, Generator, Question Bank)
- * - "How It Works" explainer
+ * - Hero with value proposition
+ * - Feature cards (evaluate, mock, generator, question bank)
+ * - "How It Works" steps
+ * - Social proof markers
  *
  * Authenticated:
- * - Stats summary bar (total evals, avg score, best score)
- * - Score trend chart (Recharts area chart)
- * - Recent evaluations table with quick-links
- * - Feature cards (collapsed to 1 row)
+ * - Stats summary bar
+ * - Score trend chart
+ * - Recent evaluations table
+ * - Streak & badges
+ * - Recommended practice questions
  */
 
 import React from "react";
@@ -48,10 +49,11 @@ import ExploreIcon from "@mui/icons-material/Explore";
 import StarIcon from "@mui/icons-material/Star";
 import HistoryIcon from "@mui/icons-material/History";
 import LockIcon from "@mui/icons-material/Lock";
-import LockOpenIcon from "@mui/icons-material/LockOpen";
 import ReplayIcon from "@mui/icons-material/Replay";
 import SchoolIcon from "@mui/icons-material/School";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import SmartToyIcon from "@mui/icons-material/SmartToy";
 import {
   AreaChart,
   Area,
@@ -84,78 +86,73 @@ import {
 const features = [
   {
     path: "/evaluate",
-    label: "New Evaluation",
-    icon: <RateReviewIcon sx={{ fontSize: 40, color: "primary.main" }} />,
-    desc: "Paste your STAR answer and get scored feedback across 6 dimensions with company-specific alignment analysis.",
-    buttonLabel: "Start Evaluation",
-    buttonVariant: "contained" as const,
-    color: "primary" as const,
+    label: "STAR Evaluation",
+    icon: <RateReviewIcon sx={{ fontSize: 32 }} />,
+    desc: "Get your behavioral answer scored across 6 dimensions with company-specific alignment.",
+    color: "#1a365d",
+    bgLight: "#eef2f7",
   },
   {
     path: "/mock",
     label: "Mock Interview",
-    icon: <TimerIcon sx={{ fontSize: 40, color: "error.main" }} />,
-    desc: "Practice under time pressure. Get a random question, countdown timer, and automatic evaluation when time runs out.",
-    buttonLabel: "Start Mock",
-    buttonVariant: "outlined" as const,
-    color: "error" as const,
+    icon: <TimerIcon sx={{ fontSize: 32 }} />,
+    desc: "Practice under realistic time pressure with random questions and auto-scoring.",
+    color: "#e53e3e",
+    bgLight: "#fff5f5",
   },
   {
     path: "/generator",
     label: "AI Generator",
-    icon: <AutoAwesomeIcon sx={{ fontSize: 40, color: "secondary.main" }} />,
-    desc: "Enter bullet points for each STAR component and let AI draft a polished narrative. Edit, then evaluate.",
-    buttonLabel: "Generate Answer",
-    buttonVariant: "outlined" as const,
-    color: "secondary" as const,
+    icon: <AutoAwesomeIcon sx={{ fontSize: 32 }} />,
+    desc: "Enter bullet points. Get a polished STAR narrative draft you can refine and evaluate.",
+    color: "#38a169",
+    bgLight: "#f0fff4",
   },
   {
     path: "/questions",
     label: "Question Bank",
-    icon: <QuizIcon sx={{ fontSize: 40, color: "info.main" }} />,
-    desc: "Browse 80+ behavioral interview questions filtered by role, competency, and difficulty.",
-    buttonLabel: "Browse Questions",
-    buttonVariant: "outlined" as const,
-    color: "info" as const,
+    icon: <QuizIcon sx={{ fontSize: 32 }} />,
+    desc: "80+ curated behavioral questions filtered by role, company, and competency.",
+    color: "#3182ce",
+    bgLight: "#ebf8ff",
   },
 ];
 
 const steps = [
   {
-    num: "1",
-    title: "Context",
-    desc: "Select your target company (22+ with researched guiding principles), role, and experience level.",
+    num: "01",
+    title: "Set the Context",
+    desc: "Select your target company, role, and level. We load their leadership principles to tailor feedback.",
   },
   {
-    num: "2",
-    title: "Question",
-    desc: "Pick from the curated question bank or write your own behavioral question.",
+    num: "02",
+    title: "Pick a Question",
+    desc: "Choose from the curated bank or paste your own behavioral question.",
   },
   {
-    num: "3",
-    title: "Answer",
-    desc: "Write your STAR-formatted answer (Situation, Task, Action, Result).",
+    num: "03",
+    title: "Write Your Answer",
+    desc: "Draft your STAR-formatted answer. Use voice dictation to practice delivery.",
   },
   {
-    num: "4",
-    title: "Evaluate",
-    desc: "Claude analyzes your answer across 6 dimensions, providing scored feedback and company alignment.",
+    num: "04",
+    title: "Get AI Feedback",
+    desc: "Claude scores 6 dimensions, highlights strengths, and shows exactly what a Staff Engineer would say.",
   },
   {
-    num: "5",
-    title: "Improve",
-    desc: "Download the PDF report, revise your answer, and re-evaluate to track improvement.",
+    num: "05",
+    title: "Revise & Improve",
+    desc: "Edit your answer, re-evaluate, and track score improvements version over version.",
   },
 ];
 
-// Chart colors per dimension
 const CHART_COLORS: Record<string, string> = {
-  average: "#1a365d",   // navy — primary theme color
-  situation: "#38a169", // green
-  task: "#3182ce",      // blue
-  action: "#d69e2e",    // amber
-  result: "#805ad5",    // purple
-  engagement: "#e53e3e", // red
+  average: "#1a365d",
+  situation: "#38a169",
+  task: "#3182ce",
+  action: "#d69e2e",
+  result: "#805ad5",
+  engagement: "#e53e3e",
 };
 
 // ---------------------------------------------------------------------------
@@ -168,107 +165,239 @@ export default function Dashboard() {
 
   return (
     <Box sx={{ maxWidth: 960, mx: "auto" }}>
-      {/* Hero */}
-      <Box sx={{ mb: 3 }}>
-        <Typography
-          variant="h4"
-          gutterBottom
-          fontWeight={700}
-          sx={{ fontSize: { xs: "1.5rem", sm: "2.125rem" } }}
-        >
-          Welcome to BIAE
-        </Typography>
-        <Typography
-          variant="h6"
-          color="text.secondary"
-          fontWeight={400}
-          sx={{ fontSize: { xs: "0.95rem", sm: "1.25rem" } }}
-        >
-          AI-powered STAR answer coaching for tech interview preparation
-        </Typography>
+      {/* Hero Section */}
+      <Box
+        sx={{
+          mb: 4,
+          py: { xs: 3, sm: 5 },
+          px: { xs: 2, sm: 4 },
+          borderRadius: 3,
+          background: "linear-gradient(135deg, #1a365d 0%, #2b6cb0 100%)",
+          color: "white",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        {/* Decorative background element */}
+        <Box
+          sx={{
+            position: "absolute",
+            top: -40,
+            right: -40,
+            width: 200,
+            height: 200,
+            borderRadius: "50%",
+            bgcolor: "rgba(255,255,255,0.06)",
+          }}
+        />
+        <Box
+          sx={{
+            position: "absolute",
+            bottom: -60,
+            right: 80,
+            width: 160,
+            height: 160,
+            borderRadius: "50%",
+            bgcolor: "rgba(255,255,255,0.04)",
+          }}
+        />
+
+        <Box sx={{ position: "relative", zIndex: 1 }}>
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
+            <SmartToyIcon sx={{ fontSize: 28 }} />
+            <Typography variant="overline" sx={{ fontWeight: 600, letterSpacing: "0.1em", opacity: 0.9 }}>
+              Career Foundry
+            </Typography>
+          </Stack>
+          <Typography
+            variant="h3"
+            fontWeight={800}
+            sx={{
+              fontSize: { xs: "1.75rem", sm: "2.5rem" },
+              lineHeight: 1.2,
+              mb: 1.5,
+              letterSpacing: "-0.02em",
+            }}
+          >
+            Nail your next behavioral interview
+          </Typography>
+          <Typography
+            variant="h6"
+            fontWeight={400}
+            sx={{
+              opacity: 0.85,
+              maxWidth: 560,
+              fontSize: { xs: "0.95rem", sm: "1.15rem" },
+              lineHeight: 1.5,
+              mb: 3,
+            }}
+          >
+            AI-powered STAR answer coaching with scored feedback, company alignment analysis,
+            and side-by-side rewrites from a Staff Engineer.
+          </Typography>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+            <Button
+              variant="contained"
+              size="large"
+              endIcon={<ArrowForwardIcon />}
+              onClick={() => navigate("/evaluate")}
+              sx={{
+                bgcolor: "white",
+                color: "primary.main",
+                fontWeight: 700,
+                "&:hover": {
+                  bgcolor: "rgba(255,255,255,0.9)",
+                  transform: "translateY(-1px)",
+                },
+              }}
+            >
+              Start Free Evaluation
+            </Button>
+            <Button
+              variant="outlined"
+              size="large"
+              onClick={() => navigate("/questions")}
+              sx={{
+                borderColor: "rgba(255,255,255,0.4)",
+                color: "white",
+                "&:hover": {
+                  borderColor: "white",
+                  bgcolor: "rgba(255,255,255,0.1)",
+                },
+              }}
+            >
+              Browse Questions
+            </Button>
+          </Stack>
+        </Box>
       </Box>
 
-      {/* Authenticated users see personalized dashboard */}
+      {/* Stats for authenticated users */}
       {isAuthenticated && <AuthenticatedDashboard />}
 
       {/* Feature cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <Grid container spacing={2.5} sx={{ mb: 4 }}>
         {features.map((f) => (
           <Grid item xs={12} sm={6} key={f.path}>
             <Card
               sx={{
                 height: "100%",
                 cursor: "pointer",
-                "&:hover": { boxShadow: 4, transform: "translateY(-2px)" },
-                transition: "all 0.2s",
+                border: 1,
+                borderColor: "transparent",
+                "&:hover": {
+                  boxShadow: 6,
+                  borderColor: f.color,
+                  transform: "translateY(-3px)",
+                },
+                transition: "all 0.2s ease",
               }}
               onClick={() => navigate(f.path)}
             >
-              <CardContent
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  height: "100%",
-                  p: 3,
-                }}
-              >
-                <Box sx={{ mb: 2 }}>{f.icon}</Box>
-                <Typography variant="h6" gutterBottom>
+              <CardContent sx={{ p: 3 }}>
+                <Box
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: "12px",
+                    bgcolor: f.bgLight,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: f.color,
+                    mb: 2,
+                  }}
+                >
+                  {f.icon}
+                </Box>
+                <Typography variant="h6" gutterBottom sx={{ fontSize: "1.05rem" }}>
                   {f.label}
                 </Typography>
                 <Typography
                   variant="body2"
                   color="text.secondary"
-                  sx={{ mb: 2, flexGrow: 1 }}
+                  sx={{ lineHeight: 1.6 }}
                 >
                   {f.desc}
                 </Typography>
-                <Button
-                  variant={f.buttonVariant}
-                  color={f.color}
-                  fullWidth
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(f.path);
-                  }}
-                >
-                  {f.buttonLabel}
-                </Button>
               </CardContent>
             </Card>
           </Grid>
         ))}
       </Grid>
 
-      {/* How It Works — only for unauthenticated users (they already know) */}
+      {/* How It Works — only for unauthenticated users */}
       {!isAuthenticated && (
-        <Card>
-          <CardContent sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom fontWeight={600}>
-              How It Works
-            </Typography>
-            <Grid container spacing={2}>
-              {steps.map((s) => (
-                <Grid item xs={12} sm={6} md={4} key={s.num}>
-                  <Stack direction="row" spacing={1.5} alignItems="flex-start">
-                    <CheckCircleOutlineIcon
-                      color="secondary"
-                      sx={{ mt: 0.3, flexShrink: 0 }}
-                    />
-                    <Box>
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        {s.num}. {s.title}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {s.desc}
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </Grid>
-              ))}
-            </Grid>
-          </CardContent>
-        </Card>
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h5" fontWeight={700} sx={{ mb: 3 }}>
+            How it works
+          </Typography>
+          <Grid container spacing={2}>
+            {steps.map((s) => (
+              <Grid item xs={12} sm={6} md={4} key={s.num}>
+                <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      fontWeight: 800,
+                      color: "primary.light",
+                      opacity: 0.25,
+                      lineHeight: 1,
+                      flexShrink: 0,
+                      userSelect: "none",
+                    }}
+                  >
+                    {s.num}
+                  </Typography>
+                  <Box>
+                    <Typography variant="subtitle2" fontWeight={700} gutterBottom>
+                      {s.title}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                      {s.desc}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
+      )}
+
+      {/* Credibility markers — unauthenticated only */}
+      {!isAuthenticated && (
+        <Box sx={{ mb: 3 }}>
+          <Stack
+            direction="row"
+            spacing={3}
+            justifyContent="center"
+            flexWrap="wrap"
+            sx={{
+              py: 3,
+              px: 2,
+              bgcolor: "background.paper",
+              borderRadius: 2,
+              border: 1,
+              borderColor: "divider",
+            }}
+          >
+            {[
+              { label: "22+ companies", sub: "with researched principles" },
+              { label: "80+ questions", sub: "curated question bank" },
+              { label: "6 dimensions", sub: "scored per answer" },
+              { label: "Claude AI", sub: "powered by Anthropic" },
+            ].map((stat) => (
+              <Box key={stat.label} sx={{ textAlign: "center", minWidth: 120 }}>
+                <Typography variant="h6" fontWeight={700} color="primary.main">
+                  {stat.label}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {stat.sub}
+                </Typography>
+              </Box>
+            ))}
+          </Stack>
+        </Box>
       )}
     </Box>
   );
@@ -340,7 +469,7 @@ function AuthenticatedDashboard() {
               Score Trend
             </Typography>
             {historyLoading ? (
-              <Skeleton variant="rectangular" height={260} />
+              <Skeleton variant="rectangular" height={260} sx={{ borderRadius: 2 }} />
             ) : (
               <ScoreTrendChart data={scoreHistory!} />
             )}
@@ -361,7 +490,7 @@ function AuthenticatedDashboard() {
             {recentLoading ? (
               <Stack spacing={1}>
                 {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} variant="rectangular" height={40} />
+                  <Skeleton key={i} variant="rectangular" height={40} sx={{ borderRadius: 1 }} />
                 ))}
               </Stack>
             ) : (
@@ -387,24 +516,28 @@ function StatsBar({
 }) {
   const statCards = [
     {
-      icon: <AssessmentIcon sx={{ fontSize: 28, color: "primary.main" }} />,
+      icon: <AssessmentIcon sx={{ fontSize: 24, color: "primary.main" }} />,
       label: "Total Evaluations",
       value: stats?.total_evaluations ?? 0,
+      color: "#eef2f7",
     },
     {
-      icon: <TrendingUpIcon sx={{ fontSize: 28, color: "secondary.main" }} />,
+      icon: <TrendingUpIcon sx={{ fontSize: 24, color: "secondary.main" }} />,
       label: "Average Score",
-      value: stats?.average_score != null ? `${stats.average_score}/5` : "—",
+      value: stats?.average_score != null ? `${stats.average_score}/5` : "\u2014",
+      color: "#f0fff4",
     },
     {
-      icon: <EmojiEventsIcon sx={{ fontSize: 28, color: "warning.main" }} />,
+      icon: <EmojiEventsIcon sx={{ fontSize: 24, color: "warning.main" }} />,
       label: "Best Score",
-      value: stats?.best_score != null ? `${stats.best_score}/5` : "—",
+      value: stats?.best_score != null ? `${stats.best_score}/5` : "\u2014",
+      color: "#fffbeb",
     },
     {
-      icon: <HistoryIcon sx={{ fontSize: 28, color: "info.main" }} />,
+      icon: <HistoryIcon sx={{ fontSize: 24, color: "info.main" }} />,
       label: "This Month",
       value: stats?.evaluations_this_month ?? 0,
+      color: "#ebf8ff",
     },
   ];
 
@@ -417,13 +550,14 @@ function StatsBar({
             sx={{
               p: 2,
               textAlign: "center",
-              border: 1,
-              borderColor: "divider",
               borderRadius: 2,
+              bgcolor: s.color,
+              transition: "transform 0.15s ease",
+              "&:hover": { transform: "translateY(-2px)" },
             }}
           >
             {loading ? (
-              <Skeleton variant="rectangular" height={60} />
+              <Skeleton variant="rectangular" height={60} sx={{ borderRadius: 1 }} />
             ) : (
               <>
                 <Box sx={{ mb: 0.5 }}>{s.icon}</Box>
@@ -447,7 +581,6 @@ function StatsBar({
 // ---------------------------------------------------------------------------
 
 function ScoreTrendChart({ data }: { data: ScoreDataPoint[] }) {
-  // Format dates for the x-axis
   const chartData = data.map((d) => ({
     ...d,
     label: new Date(d.date).toLocaleDateString("en-US", {
@@ -463,7 +596,7 @@ function ScoreTrendChart({ data }: { data: ScoreDataPoint[] }) {
         <XAxis dataKey="label" tick={{ fontSize: 12 }} />
         <YAxis domain={[0, 5]} tick={{ fontSize: 12 }} />
         <Tooltip
-          contentStyle={{ fontSize: 13 }}
+          contentStyle={{ fontSize: 13, borderRadius: 8 }}
           labelFormatter={(label) => `Date: ${label}`}
         />
         <Legend wrapperStyle={{ fontSize: 12 }} />
@@ -529,7 +662,6 @@ function RecentEvaluationsTable({
   evaluations: RecentEvaluation[];
 }) {
   const navigate = useNavigate();
-
   const hiddenOnMobile = { display: { xs: "none", sm: "table-cell" } };
 
   return (
@@ -579,7 +711,7 @@ function RecentEvaluationsTable({
                     {ev.average_score}
                   </Typography>
                 ) : (
-                  "—"
+                  "\u2014"
                 )}
               </TableCell>
               <TableCell align="center" sx={hiddenOnMobile}>
@@ -766,7 +898,7 @@ function RecommendedForYou({
           Recommended for You
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Questions where you scored ≤ 3.5, ordered by how long ago you
+          Questions where you scored &le; 3.5, ordered by how long ago you
           practiced. Focus on these to strengthen weak areas.
         </Typography>
         <Stack spacing={1.5}>
@@ -804,7 +936,7 @@ function RecommendedForYou({
                       Score: {q.best_score}/5
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      · {q.days_since_practice}d ago
+                      &middot; {q.days_since_practice}d ago
                     </Typography>
                   </Stack>
                 </Box>

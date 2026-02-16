@@ -19,6 +19,10 @@ class QuestionResponse(BaseModel):
     level_band: str | None = None
     source: str = "curated"
     usage_count: int
+    track: str = "standard"  # standard, agentic
+    interview_type: str = "behavioral"  # behavioral, system_design
+    tags: list[str] = []  # freeform tags
+    ideal_answer_points: list[str] = []  # key points a good answer should hit
 
     model_config = {"from_attributes": True}
 

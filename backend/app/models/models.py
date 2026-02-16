@@ -79,7 +79,7 @@ class Question(Base):
     """A behavioral interview question with metadata tags.
 
     Tags are stored as JSONB arrays for flexible querying:
-    - role_tags: ["MLE", "PM", "TPM", "EM"]
+    - role_tags: ["MLE", "PM", "TPM", "EM", "AGENTIC"]
     - company_tags: ["Amazon", "Meta"]
     - competency_tags: ["conflict", "leadership", "technical_challenge"]
 
@@ -87,6 +87,11 @@ class Question(Base):
     - status: pending → approved / rejected
     - Only "approved" questions appear in the public question bank
     - Curated (seeded) questions default to "approved" for backwards compatibility
+
+    Track & interview type (added for agentic integration):
+    - track: "standard" (STAR) or "agentic" (Agentic AI Engineer)
+    - interview_type: "behavioral" or "system_design"
+    - scenario_id: links to scenarios.json for agentic questions
     """
 
     __tablename__ = "questions"
@@ -96,12 +101,19 @@ class Question(Base):
     role_tags = Column(JSONB, nullable=False, default=list)
     company_tags = Column(JSONB, default=list)
     competency_tags = Column(JSONB, nullable=False, default=list)
-    difficulty = Column(String(20), nullable=False, default="standard")  # standard, advanced, senior_plus
+    difficulty = Column(String(20), nullable=False, default="standard")  # standard, advanced, senior_plus, hard, expert
     level_band = Column(String(20))  # entry, mid, senior, staff, manager
     source = Column(String(50), default="curated")  # curated, community, user_contributed
     usage_count = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # --- Track & type (agentic integration) ---
+    track = Column(String(20), nullable=False, default="standard")  # standard, agentic
+    interview_type = Column(String(20), nullable=False, default="behavioral")  # behavioral, system_design
+    scenario_id = Column(String(50), nullable=True)  # links to scenarios.json ID for agentic questions
+    tags = Column(JSONB, default=list)  # freeform tags e.g. ["circuit_breakers", "observability"]
+    ideal_answer_points = Column(JSONB, default=list)  # key points a good answer should hit
 
     # --- Moderation fields (community submissions) ---
     status = Column(String(20), default="approved")  # pending, approved, rejected
@@ -172,6 +184,9 @@ class Answer(Base):
 
     Each answer can have multiple versions (revisions). The user_id is nullable
     to support the evaluation flow before authentication is built.
+
+    For agentic track answers, target_company_id is nullable (agentic
+    evaluations don't require a company context — they're role-specific).
     """
 
     __tablename__ = "answers"
@@ -180,9 +195,11 @@ class Answer(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
     question_id = Column(UUID(as_uuid=True), ForeignKey("questions.id"), nullable=True)
     custom_question_text = Column(Text)  # If user typed a custom question
-    target_company_id = Column(UUID(as_uuid=True), ForeignKey("company_profiles.id"), nullable=False)
+    target_company_id = Column(UUID(as_uuid=True), ForeignKey("company_profiles.id"), nullable=True)
     target_role = Column(String(50), nullable=False)
     experience_level = Column(String(50), nullable=False)
+    track = Column(String(20), nullable=False, default="standard")  # standard, agentic
+    interview_type = Column(String(20), nullable=False, default="behavioral")  # behavioral, system_design
     version_count = Column(Integer, default=1)
     best_average_score = Column(Numeric(2, 1))  # Best avg across all versions
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -228,11 +245,13 @@ class AnswerVersion(Base):
 class Evaluation(Base):
     """Claude's scored evaluation of an answer version.
 
-    Stores both the raw markdown and extracted structured data:
-    - 6 dimension scores (1-5 each)
-    - Parsed sections for programmatic access
-    - Company alignment details
-    - Predicted follow-up questions
+    Supports two evaluation formats:
+    1. Standard STAR — 6 dimension scores (1-5), raw markdown, parsed sections
+    2. Agentic — 4 dimension scores (0-100) as JSONB, structured JSON response
+
+    The evaluation_type field determines which score columns are populated.
+    Standard evaluations use the individual score columns + evaluation_markdown.
+    Agentic evaluations use agentic_scores JSONB + agentic_result JSONB.
     """
 
     __tablename__ = "evaluations"
@@ -245,7 +264,10 @@ class Evaluation(Base):
     )
     status = Column(String(50), default="queued")  # queued, analyzing, completed, failed
 
-    # Individual dimension scores (1-5)
+    # --- Evaluation type ---
+    evaluation_type = Column(String(20), nullable=False, default="standard")  # standard, agentic
+
+    # --- Standard STAR scores (1-5) — populated for evaluation_type="standard" ---
     situation_score = Column(Integer)
     task_score = Column(Integer)
     action_score = Column(Integer)
@@ -254,7 +276,15 @@ class Evaluation(Base):
     overall_score = Column(Integer)
     average_score = Column(Numeric(2, 1))
 
-    # Full evaluation content
+    # --- Agentic scores (0-100) — populated for evaluation_type="agentic" ---
+    # Stores {dimension_name: score} e.g. {"agentic_thinking": 75, "safety_alignment": 82, ...}
+    agentic_scores = Column(JSONB)
+    # Full structured JSON response from Claude (includes hiring_decision, the_diff, etc.)
+    agentic_result = Column(JSONB)
+    # Hiring decision: STRONG_HIRE, HIRE, BORDERLINE, REJECT
+    hiring_decision = Column(String(20))
+
+    # Full evaluation content (standard STAR)
     evaluation_markdown = Column(Text)
     evaluation_sections = Column(JSONB)  # Parsed sections for structured access
 

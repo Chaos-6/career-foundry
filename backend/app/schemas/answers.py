@@ -22,17 +22,19 @@ class AnswerCreateRequest(BaseModel):
     """Request to create a new answer with its first version.
 
     Either question_id (from the question bank) or custom_question_text
-    must be provided. The company_id links to a CompanyProfile for
-    evaluation context.
+    must be provided. For standard track, target_company_id is required.
+    For agentic track, company is optional.
     """
 
     question_id: Optional[UUID] = None
     custom_question_text: Optional[str] = None
-    target_company_id: UUID
+    target_company_id: Optional[UUID] = None
     target_role: str = Field(..., min_length=1, max_length=50)
     experience_level: str = Field(..., min_length=1, max_length=50)
     answer_text: str = Field(..., min_length=10)
     is_ai_assisted: bool = False
+    track: str = "standard"  # standard, agentic
+    interview_type: str = "behavioral"  # behavioral, system_design
 
 
 class VersionCreateRequest(BaseModel):
@@ -69,9 +71,11 @@ class AnswerResponse(BaseModel):
     user_id: Optional[UUID] = None
     question_id: Optional[UUID] = None
     custom_question_text: Optional[str] = None
-    target_company_id: UUID
+    target_company_id: Optional[UUID] = None
     target_role: str
     experience_level: str
+    track: str = "standard"
+    interview_type: str = "behavioral"
     version_count: int
     best_average_score: Optional[Decimal] = None
     created_at: datetime

@@ -57,12 +57,20 @@ async def create_answer(
             detail="Either question_id or custom_question_text must be provided",
         )
 
-    # Validate company exists
-    company_result = await db.execute(
-        select(CompanyProfile).where(CompanyProfile.id == request.target_company_id)
-    )
-    if not company_result.scalar_one_or_none():
-        raise HTTPException(status_code=404, detail="Company not found")
+    is_agentic = request.track == "agentic"
+
+    # Validate company exists (required for standard track, optional for agentic)
+    if request.target_company_id:
+        company_result = await db.execute(
+            select(CompanyProfile).where(CompanyProfile.id == request.target_company_id)
+        )
+        if not company_result.scalar_one_or_none():
+            raise HTTPException(status_code=404, detail="Company not found")
+    elif not is_agentic:
+        raise HTTPException(
+            status_code=422,
+            detail="Company is required for standard track evaluations",
+        )
 
     # Validate question exists (if provided)
     if request.question_id:
@@ -83,6 +91,8 @@ async def create_answer(
         target_company_id=request.target_company_id,
         target_role=request.target_role,
         experience_level=request.experience_level,
+        track=request.track,
+        interview_type=request.interview_type,
         version_count=1,
     )
     db.add(answer)

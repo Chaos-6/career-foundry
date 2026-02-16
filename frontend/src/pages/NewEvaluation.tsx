@@ -36,6 +36,9 @@ import SendIcon from "@mui/icons-material/Send";
 import ShuffleIcon from "@mui/icons-material/Shuffle";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import SmartToyIcon from "@mui/icons-material/SmartToy";
+import AssignmentIcon from "@mui/icons-material/Assignment";
+import LinearProgress from "@mui/material/LinearProgress";
 
 import {
   listCompanies,
@@ -46,13 +49,22 @@ import {
   createAnswer,
   createEvaluation,
   importAnswers,
+  listScenarios,
+  getRandomScenario,
+  getScenarioCategories,
   Company,
   Question,
+  Scenario,
   AnswerTemplate,
   ImportResponse,
 } from "../api/client";
 import UpgradePrompt, { isTierLimitError } from "../components/UpgradePrompt";
 import VoiceInput from "../components/VoiceInput";
+
+const TRACKS = [
+  { value: "standard", label: "Standard (STAR)" },
+  { value: "agentic", label: "Agentic AI Engineer" },
+];
 
 const ROLES = ["MLE", "PM", "TPM", "EM"];
 const LEVELS = [
@@ -69,9 +81,15 @@ export default function NewEvaluation() {
   const passedQuestionId = (location.state as any)?.questionId || "";
 
   // Form state
+  const [track, setTrack] = useState("standard");
   const [companyId, setCompanyId] = useState("");
   const [role, setRole] = useState("");
   const [level, setLevel] = useState("");
+  const [agenticCategory, setAgenticCategory] = useState("");
+  const [agenticType, setAgenticType] = useState("behavioral");
+  const [selectedScenarioId, setSelectedScenarioId] = useState("");
+
+  const isAgentic = track === "agentic";
   const [questionMode, setQuestionMode] = useState<"bank" | "custom">("bank");
   const [selectedQuestionId, setSelectedQuestionId] = useState(passedQuestionId);
   const [customQuestion, setCustomQuestion] = useState("");
@@ -112,7 +130,25 @@ export default function NewEvaluation() {
         level: level || undefined,
         limit: 100,
       }),
-    enabled: questionMode === "bank",
+    enabled: questionMode === "bank" && !isAgentic,
+  });
+
+  // Agentic scenario queries
+  const { data: scenarios } = useQuery({
+    queryKey: ["scenarios", agenticCategory, agenticType],
+    queryFn: () =>
+      listScenarios({
+        track: "agentic",
+        category: agenticCategory || undefined,
+        interview_type: agenticType || undefined,
+      }),
+    enabled: isAgentic,
+  });
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ["scenario-categories"],
+    queryFn: () => getScenarioCategories("agentic"),
+    enabled: isAgentic,
   });
 
   // Random question
@@ -130,16 +166,33 @@ export default function NewEvaluation() {
   // Submit mutation
   const submitMutation = useMutation({
     mutationFn: async () => {
-      // Create answer
+      // Determine question text for agentic scenarios
+      let questionText: string | undefined;
+      if (isAgentic && selectedScenarioId) {
+        const scenario = scenarios?.items.find(
+          (s) => s.id === selectedScenarioId
+        );
+        questionText = scenario?.question;
+      }
+
+      // Create answer — agentic track doesn't require company
       const answer = await createAnswer({
-        question_id: questionMode === "bank" ? selectedQuestionId : undefined,
-        custom_question_text:
-          questionMode === "custom" ? customQuestion : undefined,
-        target_company_id: companyId,
-        target_role: role,
-        experience_level: level,
+        question_id:
+          !isAgentic && questionMode === "bank"
+            ? selectedQuestionId
+            : undefined,
+        custom_question_text: isAgentic
+          ? questionText || customQuestion || undefined
+          : questionMode === "custom"
+          ? customQuestion
+          : undefined,
+        target_company_id: isAgentic ? undefined : companyId,
+        target_role: isAgentic ? "AGENTIC" : role,
+        experience_level: isAgentic ? "senior" : level,
         answer_text: answerText,
-      });
+        track: track,
+        interview_type: isAgentic ? agenticType : "behavioral",
+      } as any);
 
       // Get the first version's ID
       // The answer response doesn't include versions, so we need to
@@ -178,16 +231,24 @@ export default function NewEvaluation() {
   const handleSubmit = () => {
     setError("");
 
-    // Validation
-    if (!companyId) return setError("Please select a company.");
-    if (!role) return setError("Please select a role.");
-    if (!level) return setError("Please select an experience level.");
-    if (questionMode === "bank" && !selectedQuestionId)
-      return setError("Please select a question from the bank.");
-    if (questionMode === "custom" && !customQuestion.trim())
-      return setError("Please enter a custom question.");
-    if (answerText.trim().split(/\s+/).length < 10)
-      return setError("Answer must be at least 10 words.");
+    if (isAgentic) {
+      // Agentic validation — simpler, no company required
+      if (!selectedScenarioId && !customQuestion.trim())
+        return setError("Please select a scenario or enter a custom question.");
+      if (answerText.trim().split(/\s+/).length < 10)
+        return setError("Answer must be at least 10 words.");
+    } else {
+      // Standard validation
+      if (!companyId) return setError("Please select a company.");
+      if (!role) return setError("Please select a role.");
+      if (!level) return setError("Please select an experience level.");
+      if (questionMode === "bank" && !selectedQuestionId)
+        return setError("Please select a question from the bank.");
+      if (questionMode === "custom" && !customQuestion.trim())
+        return setError("Please enter a custom question.");
+      if (answerText.trim().split(/\s+/).length < 10)
+        return setError("Answer must be at least 10 words.");
+    }
 
     submitMutation.mutate();
   };
@@ -262,6 +323,26 @@ export default function NewEvaluation() {
     (q) => q.id === selectedQuestionId
   );
 
+  // Progress calculation — rough step completion tracker
+  const progressPct = (() => {
+    let filled = 0;
+    const total = 3;
+    if (isAgentic) {
+      if (agenticType) filled += 1;
+      if (selectedScenarioId || customQuestion.trim()) filled += 1;
+      if (answerText.trim().split(/\s+/).length >= 10) filled += 1;
+    } else {
+      if (companyId && role && level) filled += 1;
+      if (
+        (questionMode === "bank" && selectedQuestionId) ||
+        (questionMode === "custom" && customQuestion.trim())
+      )
+        filled += 1;
+      if (answerText.trim().split(/\s+/).length >= 10) filled += 1;
+    }
+    return (filled / total) * 100;
+  })();
+
   return (
     <Box sx={{ maxWidth: 800, mx: "auto" }}>
       <Typography
@@ -271,19 +352,152 @@ export default function NewEvaluation() {
       >
         New Evaluation
       </Typography>
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-        Select your target company and role, choose a question, paste your
-        STAR-formatted answer, and get AI-powered feedback.
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+        {isAgentic
+          ? "Practice agentic AI interview questions. Get scored on 4 dimensions with a Staff Engineer rewrite."
+          : "Select your target company and role, choose a question, paste your STAR-formatted answer, and get AI-powered feedback."}
       </Typography>
 
+      {/* Track Selector — pill-style toggle */}
+      <Stack direction="row" spacing={1.5} sx={{ mb: 2 }}>
+        <Card
+          variant={track === "standard" ? "elevation" : "outlined"}
+          sx={{
+            flex: 1,
+            cursor: "pointer",
+            p: 0,
+            border: 2,
+            borderColor: track === "standard" ? "primary.main" : "divider",
+            transition: "all 0.15s ease",
+            "&:hover": {
+              borderColor: track === "standard" ? "primary.main" : "primary.light",
+            },
+          }}
+          onClick={() => setTrack("standard")}
+        >
+          <CardContent sx={{ py: 1.5, px: 2, "&:last-child": { pb: 1.5 } }}>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <AssignmentIcon
+                sx={{ color: track === "standard" ? "primary.main" : "text.secondary", fontSize: 22 }}
+              />
+              <Box>
+                <Typography variant="subtitle2" fontWeight={track === "standard" ? 700 : 500}>
+                  Standard (STAR)
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  6-dimension behavioral scoring
+                </Typography>
+              </Box>
+            </Stack>
+          </CardContent>
+        </Card>
+        <Card
+          variant={track === "agentic" ? "elevation" : "outlined"}
+          sx={{
+            flex: 1,
+            cursor: "pointer",
+            p: 0,
+            border: 2,
+            borderColor: track === "agentic" ? "secondary.main" : "divider",
+            transition: "all 0.15s ease",
+            "&:hover": {
+              borderColor: track === "agentic" ? "secondary.main" : "secondary.light",
+            },
+          }}
+          onClick={() => setTrack("agentic")}
+        >
+          <CardContent sx={{ py: 1.5, px: 2, "&:last-child": { pb: 1.5 } }}>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <SmartToyIcon
+                sx={{ color: track === "agentic" ? "secondary.main" : "text.secondary", fontSize: 22 }}
+              />
+              <Box sx={{ flex: 1 }}>
+                <Stack direction="row" alignItems="center" spacing={0.75}>
+                  <Typography variant="subtitle2" fontWeight={track === "agentic" ? 700 : 500}>
+                    Agentic AI Engineer
+                  </Typography>
+                  <Chip
+                    label="NEW"
+                    size="small"
+                    color="secondary"
+                    sx={{ height: 18, fontSize: 10, fontWeight: 700 }}
+                  />
+                </Stack>
+                <Typography variant="caption" color="text.secondary">
+                  0-100 scoring + Staff Engineer rewrite
+                </Typography>
+              </Box>
+            </Stack>
+          </CardContent>
+        </Card>
+      </Stack>
+
+      {/* Progress indicator */}
+      <Box sx={{ mb: 3 }}>
+        <LinearProgress
+          variant="determinate"
+          value={progressPct}
+          sx={{
+            height: 4,
+            borderRadius: 2,
+            bgcolor: "grey.100",
+            "& .MuiLinearProgress-bar": {
+              borderRadius: 2,
+              transition: "transform 0.4s ease",
+              bgcolor: progressPct === 100 ? "secondary.main" : "primary.main",
+            },
+          }}
+        />
+        <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: "block" }}>
+          {progressPct === 0
+            ? "Fill in the steps below"
+            : progressPct === 100
+            ? "Ready to evaluate!"
+            : `${Math.round(progressPct)}% complete`}
+        </Typography>
+      </Box>
+
       <Stack spacing={3}>
-        {/* Company Selection */}
+        {/* Context Selection — different for each track */}
         <Card>
           <CardContent>
             <Typography variant="h6" gutterBottom>
-              1. Target Context
+              1. {isAgentic ? "Interview Type" : "Target Context"}
             </Typography>
             <Stack spacing={2}>
+              {isAgentic ? (
+                /* Agentic track — type + category selectors */
+                <Stack direction="row" spacing={2}>
+                  <FormControl fullWidth>
+                    <InputLabel>Type</InputLabel>
+                    <Select
+                      value={agenticType}
+                      label="Type"
+                      onChange={(e) => setAgenticType(e.target.value)}
+                    >
+                      <MenuItem value="behavioral">Behavioral</MenuItem>
+                      <MenuItem value="system_design">System Design</MenuItem>
+                    </Select>
+                  </FormControl>
+                  <FormControl fullWidth>
+                    <InputLabel>Category (optional)</InputLabel>
+                    <Select
+                      value={agenticCategory}
+                      label="Category (optional)"
+                      onChange={(e) => setAgenticCategory(e.target.value)}
+                    >
+                      <MenuItem value="">All Categories</MenuItem>
+                      {categories.map((c: string) => (
+                        <MenuItem key={c} value={c}>
+                          {c.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Stack>
+              ) : (
+                /* Standard track — company + role + level */
+                <>
               <FormControl fullWidth>
                 <InputLabel>Company</InputLabel>
                 <Select
@@ -339,6 +553,8 @@ export default function NewEvaluation() {
                   </Select>
                 </FormControl>
               </Stack>
+                </>
+              )}
             </Stack>
           </CardContent>
         </Card>
@@ -347,9 +563,74 @@ export default function NewEvaluation() {
         <Card>
           <CardContent>
             <Typography variant="h6" gutterBottom>
-              2. Behavioral Question
+              2. {isAgentic ? "Agentic Scenario" : "Behavioral Question"}
             </Typography>
 
+            {isAgentic ? (
+              /* Agentic scenario selector */
+              <Stack spacing={2}>
+                <FormControl fullWidth>
+                  <InputLabel>Select a Scenario</InputLabel>
+                  <Select
+                    value={selectedScenarioId}
+                    label="Select a Scenario"
+                    onChange={(e) => setSelectedScenarioId(e.target.value)}
+                  >
+                    {scenarios?.items.map((s: Scenario) => (
+                      <MenuItem key={s.id} value={s.id}>
+                        <Box>
+                          <Typography variant="body2" sx={{ maxWidth: 600, whiteSpace: "normal" }}>
+                            {s.question}
+                          </Typography>
+                          <Stack direction="row" spacing={0.5} sx={{ mt: 0.5 }}>
+                            <Chip
+                              label={s.category.replace(/_/g, " ")}
+                              size="small"
+                              variant="outlined"
+                            />
+                            <Chip
+                              label={s.difficulty}
+                              size="small"
+                              color={s.difficulty === "expert" ? "error" : "warning"}
+                            />
+                            <Chip
+                              label={s.type === "system_design" ? "System Design" : "Behavioral"}
+                              size="small"
+                              color="primary"
+                              variant="outlined"
+                            />
+                          </Stack>
+                        </Box>
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                {selectedScenarioId && scenarios?.items.find(s => s.id === selectedScenarioId) && (
+                  <Alert severity="info">
+                    <strong>Selected:</strong>{" "}
+                    {scenarios.items.find(s => s.id === selectedScenarioId)!.question}
+                  </Alert>
+                )}
+
+                <Typography variant="body2" color="text.secondary">
+                  Or type a custom agentic question below:
+                </Typography>
+                <TextField
+                  fullWidth
+                  multiline
+                  minRows={2}
+                  label="Custom question (optional)"
+                  value={customQuestion}
+                  onChange={(e) => {
+                    setCustomQuestion(e.target.value);
+                    if (e.target.value) setSelectedScenarioId("");
+                  }}
+                  placeholder="Design an agent that..."
+                />
+              </Stack>
+            ) : (
+            <>
             <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
               <Chip
                 label="From Question Bank"
@@ -430,6 +711,8 @@ export default function NewEvaluation() {
                 placeholder="Tell me about a time when..."
               />
             )}
+            </>
+            )}
           </CardContent>
         </Card>
 
@@ -437,11 +720,12 @@ export default function NewEvaluation() {
         <Card>
           <CardContent>
             <Typography variant="h6" gutterBottom>
-              3. Your STAR Answer
+              3. {isAgentic ? "Your Answer" : "Your STAR Answer"}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Paste your answer using the STAR framework: Situation, Task,
-              Action, Result. Aim for 200-400 words (about 2-3 minutes spoken).
+              {isAgentic
+                ? "Describe your approach to the scenario. Be specific about architecture, safety considerations, and trade-offs. Aim for 200-500 words."
+                : "Paste your answer using the STAR framework: Situation, Task, Action, Result. Aim for 200-400 words (about 2-3 minutes spoken)."}
             </Typography>
 
             {/* Template selector */}
@@ -484,10 +768,15 @@ export default function NewEvaluation() {
               value={answerText}
               onChange={(e) => setAnswerText(e.target.value)}
               placeholder={
-                "Situation: At my previous company...\n\n" +
-                "Task: I was responsible for...\n\n" +
-                "Action: I decided to...\n\n" +
-                "Result: As a result..."
+                isAgentic
+                  ? "I would approach this by first defining the agent's goals and constraints...\n\n" +
+                    "The architecture would use...\n\n" +
+                    "For safety, I would implement...\n\n" +
+                    "Key trade-offs include..."
+                  : "Situation: At my previous company...\n\n" +
+                    "Task: I was responsible for...\n\n" +
+                    "Action: I decided to...\n\n" +
+                    "Result: As a result..."
               }
             />
             <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mt: 1 }}>
@@ -638,9 +927,25 @@ export default function NewEvaluation() {
           }
           onClick={handleSubmit}
           disabled={submitMutation.isPending}
-          sx={{ py: 1.5 }}
+          sx={{
+            py: 1.5,
+            px: 4,
+            fontSize: "1rem",
+            background: isAgentic
+              ? "linear-gradient(135deg, #276749 0%, #38a169 100%)"
+              : "linear-gradient(135deg, #1a365d 0%, #2b6cb0 100%)",
+            "&:hover": {
+              background: isAgentic
+                ? "linear-gradient(135deg, #22543d 0%, #276749 100%)"
+                : "linear-gradient(135deg, #0d1f3c 0%, #1a365d 100%)",
+            },
+          }}
         >
-          {submitMutation.isPending ? "Evaluating..." : "Evaluate My Answer"}
+          {submitMutation.isPending
+            ? "Evaluating..."
+            : isAgentic
+            ? "Evaluate with Agentic Criteria"
+            : "Evaluate My Answer"}
         </Button>
       </Stack>
 

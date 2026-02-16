@@ -35,6 +35,7 @@ import {
 } from "@mui/material";
 import GoogleIcon from "@mui/icons-material/Google";
 import GitHubIcon from "@mui/icons-material/GitHub";
+import SmartToyIcon from "@mui/icons-material/SmartToy";
 import { useAuth } from "../hooks/useAuth";
 import { setTokens } from "../api/client";
 
@@ -151,17 +152,32 @@ export default function LoginPage() {
       }}
     >
       {/* Branding */}
-      <Stack alignItems="center" sx={{ mb: 3 }}>
+      <Stack alignItems="center" sx={{ mb: 4 }}>
+        <Box
+          sx={{
+            width: 52,
+            height: 52,
+            borderRadius: "14px",
+            bgcolor: "primary.main",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            mb: 2,
+          }}
+        >
+          <SmartToyIcon sx={{ color: "white", fontSize: 28 }} />
+        </Box>
         <Typography
           variant="h4"
-          fontWeight={700}
-          color="primary.main"
+          fontWeight={800}
+          color="text.primary"
           gutterBottom
+          sx={{ letterSpacing: "-0.02em" }}
         >
-          BIAE
+          Career Foundry
         </Typography>
-        <Typography variant="body1" color="text.secondary" textAlign="center">
-          AI-powered STAR answer coaching for tech interviews
+        <Typography variant="body1" color="text.secondary" textAlign="center" sx={{ maxWidth: 320 }}>
+          AI-powered interview coaching. Practice answers. Get scored feedback. Land the job.
         </Typography>
       </Stack>
 

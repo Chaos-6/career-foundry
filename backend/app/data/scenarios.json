@@ -1,0 +1,517 @@
+[
+  {
+    "id": "agentic_arch_01",
+    "track": "agentic",
+    "type": "behavioral",
+    "role": "AGENTIC_ENGINEER",
+    "category": "architecture_orchestration",
+    "difficulty": "hard",
+    "question": "Tell me about a time you deployed an autonomous agent that got stuck in an infinite loop. How did you detect it, and what did you do?",
+    "tags": ["circuit_breakers", "observability", "cost", "loop_detection"],
+    "ideal_answer_points": [
+      "Step limits or iteration caps",
+      "Loop detection heuristics (repeated tool calls, state divergence)",
+      "Cost and token budget monitoring",
+      "Graceful degradation with human-in-the-loop fallback",
+      "Post-mortem: eval harness to catch the pattern"
+    ]
+  },
+  {
+    "id": "agentic_arch_02",
+    "track": "agentic",
+    "type": "behavioral",
+    "role": "AGENTIC_ENGINEER",
+    "category": "architecture_orchestration",
+    "difficulty": "hard",
+    "question": "Describe a situation where your agent's tool-use went wrong — it called the right tool with the wrong parameters, or the wrong tool entirely. How did you handle it?",
+    "tags": ["tool_use", "hallucination", "validation", "error_handling"],
+    "ideal_answer_points": [
+      "Input validation layer before tool execution",
+      "Schema enforcement for tool parameters",
+      "Dry-run or sandbox mode for destructive tools",
+      "Observability: logging tool calls with inputs/outputs",
+      "Fallback strategy when tool call fails"
+    ]
+  },
+  {
+    "id": "agentic_arch_03",
+    "track": "agentic",
+    "type": "behavioral",
+    "role": "AGENTIC_ENGINEER",
+    "category": "architecture_orchestration",
+    "difficulty": "hard",
+    "question": "Tell me about a time your agent hit the context window limit mid-task. What was your strategy to handle it?",
+    "tags": ["context_window", "memory", "summarization", "token_management"],
+    "ideal_answer_points": [
+      "Context window monitoring and proactive management",
+      "Summarization strategies (sliding window, hierarchical)",
+      "External memory (vector store, key-value cache)",
+      "Task decomposition to reduce per-step context",
+      "Token budget allocation across planning vs execution"
+    ]
+  },
+  {
+    "id": "agentic_arch_04",
+    "track": "agentic",
+    "type": "behavioral",
+    "role": "AGENTIC_ENGINEER",
+    "category": "architecture_orchestration",
+    "difficulty": "expert",
+    "question": "Describe a scenario where you had multiple agents that needed to collaborate but their outputs conflicted. How did you resolve it?",
+    "tags": ["multi_agent", "conflict_resolution", "orchestration", "consensus"],
+    "ideal_answer_points": [
+      "Clear agent responsibility boundaries",
+      "Conflict resolution strategy (voting, priority, arbitration)",
+      "Shared state management and locking",
+      "Orchestrator pattern vs peer-to-peer communication",
+      "Testing multi-agent interactions"
+    ]
+  },
+  {
+    "id": "agentic_arch_05",
+    "track": "agentic",
+    "type": "behavioral",
+    "role": "AGENTIC_ENGINEER",
+    "category": "architecture_orchestration",
+    "difficulty": "hard",
+    "question": "Tell me about a time you had to make a trade-off between agent latency and agent accuracy. What did you choose and why?",
+    "tags": ["latency", "accuracy", "trade_offs", "optimization"],
+    "ideal_answer_points": [
+      "Quantified the latency vs accuracy trade-off",
+      "User-facing requirements drove the decision",
+      "Techniques: model selection, caching, parallel tool calls",
+      "Measuring impact of the trade-off on user experience",
+      "A/B testing or gradual rollout to validate"
+    ]
+  },
+  {
+    "id": "agentic_safety_01",
+    "track": "agentic",
+    "type": "behavioral",
+    "role": "AGENTIC_ENGINEER",
+    "category": "safety_alignment",
+    "difficulty": "hard",
+    "question": "Tell me about a time you discovered a prompt injection vulnerability in a production agent. How did you find it and fix it?",
+    "tags": ["prompt_injection", "security", "input_validation", "defense"],
+    "ideal_answer_points": [
+      "Detection: red teaming, monitoring, user reports",
+      "Input sanitization and prompt hardening",
+      "Separation of user content from system instructions",
+      "Defense in depth (multiple layers of protection)",
+      "Post-incident: added to eval suite"
+    ]
+  },
+  {
+    "id": "agentic_safety_02",
+    "track": "agentic",
+    "type": "behavioral",
+    "role": "AGENTIC_ENGINEER",
+    "category": "safety_alignment",
+    "difficulty": "expert",
+    "question": "Describe a situation where your agent accidentally leaked PII or sensitive data. What happened, what was the blast radius, and how did you prevent it from happening again?",
+    "tags": ["pii", "data_leak", "privacy", "compliance", "incident_response"],
+    "ideal_answer_points": [
+      "Incident detection and response timeline",
+      "Blast radius assessment and containment",
+      "Root cause: how PII entered the agent's context",
+      "Fix: output filtering, PII detection, data classification",
+      "Preventive: automated PII scanning in eval pipeline"
+    ]
+  },
+  {
+    "id": "agentic_safety_03",
+    "track": "agentic",
+    "type": "behavioral",
+    "role": "AGENTIC_ENGINEER",
+    "category": "safety_alignment",
+    "difficulty": "hard",
+    "question": "Tell me about a time your agent made a biased or discriminatory decision. How did you discover it, and what systemic changes did you implement?",
+    "tags": ["bias", "fairness", "discrimination", "eval", "systemic_fix"],
+    "ideal_answer_points": [
+      "Discovery method (user report, audit, eval suite)",
+      "Understanding the bias source (training data, prompt, tool)",
+      "Immediate mitigation vs long-term fix",
+      "Eval harness for bias detection",
+      "Ongoing monitoring and reporting"
+    ]
+  },
+  {
+    "id": "agentic_safety_04",
+    "track": "agentic",
+    "type": "behavioral",
+    "role": "AGENTIC_ENGINEER",
+    "category": "safety_alignment",
+    "difficulty": "hard",
+    "question": "Describe a time your agent needed to refuse an unsafe request from a user, but the refusal itself caused a bad user experience. How did you balance safety with usability?",
+    "tags": ["refusal", "user_experience", "safety_ux", "graceful_degradation"],
+    "ideal_answer_points": [
+      "Specific example of the safety/UX tension",
+      "Graduated response (warn → suggest alternative → refuse)",
+      "User communication: explain why, not just block",
+      "Metrics: refusal rate, user satisfaction, safety incidents",
+      "Iterative improvement of refusal quality"
+    ]
+  },
+  {
+    "id": "agentic_safety_05",
+    "track": "agentic",
+    "type": "behavioral",
+    "role": "AGENTIC_ENGINEER",
+    "category": "safety_alignment",
+    "difficulty": "expert",
+    "question": "Tell me about your experience with adversarial testing of AI agents. Describe a jailbreak or prompt attack you discovered, and the cat-and-mouse game of fixing it.",
+    "tags": ["jailbreak", "red_teaming", "adversarial", "defense_in_depth"],
+    "ideal_answer_points": [
+      "Specific attack vector discovered",
+      "Red teaming methodology (manual, automated, hybrid)",
+      "Defense layers (input filtering, system prompt, output validation)",
+      "Cat-and-mouse: attack evolved, defense adapted",
+      "Integration into CI/CD eval pipeline"
+    ]
+  },
+  {
+    "id": "agentic_ops_01",
+    "track": "agentic",
+    "type": "behavioral",
+    "role": "AGENTIC_ENGINEER",
+    "category": "production_operations",
+    "difficulty": "hard",
+    "question": "Tell me about a time you noticed your agent's behavior drifting over time — the same inputs started producing different outputs. How did you detect it and what was the root cause?",
+    "tags": ["drift", "monitoring", "consistency", "model_updates"],
+    "ideal_answer_points": [
+      "Detection: eval suite regression, user reports, metrics dashboards",
+      "Root cause analysis (model update, data drift, prompt degradation)",
+      "Pinning strategy (model version, prompt version)",
+      "Automated drift detection in monitoring",
+      "Rollback procedure"
+    ]
+  },
+  {
+    "id": "agentic_ops_02",
+    "track": "agentic",
+    "type": "behavioral",
+    "role": "AGENTIC_ENGINEER",
+    "category": "production_operations",
+    "difficulty": "hard",
+    "question": "Describe a time your agent's API costs spiked unexpectedly. What caused it, how did you respond, and what guardrails did you put in place?",
+    "tags": ["cost", "monitoring", "rate_limiting", "budget", "alerting"],
+    "ideal_answer_points": [
+      "Detection: cost monitoring and alerting",
+      "Root cause (retry storm, loop, verbose output, context inflation)",
+      "Immediate response (kill switch, rate limit, budget cap)",
+      "Long-term: per-user budgets, token accounting, cost dashboards",
+      "Architecture changes to reduce token usage"
+    ]
+  },
+  {
+    "id": "agentic_ops_03",
+    "track": "agentic",
+    "type": "behavioral",
+    "role": "AGENTIC_ENGINEER",
+    "category": "production_operations",
+    "difficulty": "expert",
+    "question": "Tell me about a time you had to manage multiple versions of an agent's prompt/system in production simultaneously. How did you handle versioning, rollback, and A/B testing?",
+    "tags": ["versioning", "rollback", "ab_testing", "deployment", "feature_flags"],
+    "ideal_answer_points": [
+      "Prompt versioning strategy (git, database, feature flags)",
+      "A/B testing framework for prompt changes",
+      "Rollback procedure and speed",
+      "Metrics for comparing versions",
+      "Gradual rollout strategy"
+    ]
+  },
+  {
+    "id": "agentic_ops_04",
+    "track": "agentic",
+    "type": "behavioral",
+    "role": "AGENTIC_ENGINEER",
+    "category": "production_operations",
+    "difficulty": "hard",
+    "question": "Describe a situation where user feedback contradicted your agent's evaluation metrics. The eval suite said the agent was great, but users complained. How did you reconcile this?",
+    "tags": ["feedback_loop", "eval", "user_satisfaction", "metrics_alignment"],
+    "ideal_answer_points": [
+      "Specific disconnect between metrics and user experience",
+      "Investigation: what the eval measured vs what users cared about",
+      "Updated eval criteria to capture user-relevant quality",
+      "Feedback collection mechanism (thumbs up/down, surveys)",
+      "Ongoing calibration of automated evals against human judgment"
+    ]
+  },
+  {
+    "id": "agentic_ops_05",
+    "track": "agentic",
+    "type": "behavioral",
+    "role": "AGENTIC_ENGINEER",
+    "category": "production_operations",
+    "difficulty": "hard",
+    "question": "Tell me about a time your RAG-based agent started returning stale or incorrect information. How did you diagnose the issue and fix the retrieval pipeline?",
+    "tags": ["rag", "retrieval", "stale_data", "indexing", "data_freshness"],
+    "ideal_answer_points": [
+      "Detection: user reports, automated freshness checks",
+      "Root cause in retrieval pipeline (stale index, embedding drift, chunking)",
+      "Fix: re-indexing strategy, freshness signals, TTL",
+      "Evaluation: retrieval quality metrics (recall, precision, MRR)",
+      "Monitoring for ongoing retrieval quality"
+    ]
+  },
+  {
+    "id": "agentic_eval_01",
+    "track": "agentic",
+    "type": "behavioral",
+    "role": "AGENTIC_ENGINEER",
+    "category": "evaluation_metrics",
+    "difficulty": "hard",
+    "question": "Tell me about a time you had to evaluate an agent on a subjective task (like writing quality or customer support tone). How did you build an evaluation framework for something that doesn't have a clear 'right answer'?",
+    "tags": ["eval", "subjective", "rubric", "human_eval", "llm_as_judge"],
+    "ideal_answer_points": [
+      "Rubric design with specific, measurable criteria",
+      "Inter-rater reliability for human evaluators",
+      "LLM-as-judge with calibration against human scores",
+      "Eval dataset curation and maintenance",
+      "Continuous calibration as quality standards evolve"
+    ]
+  },
+  {
+    "id": "agentic_eval_02",
+    "track": "agentic",
+    "type": "behavioral",
+    "role": "AGENTIC_ENGINEER",
+    "category": "evaluation_metrics",
+    "difficulty": "hard",
+    "question": "Describe your approach to measuring and reducing hallucination rates in a production agent. What metrics did you use, and what techniques actually moved the needle?",
+    "tags": ["hallucination", "factuality", "grounding", "eval", "measurement"],
+    "ideal_answer_points": [
+      "Hallucination taxonomy (factual, fabricated, contradictory)",
+      "Measurement methodology (human annotation, automated checks)",
+      "Grounding techniques (RAG, citation, source attribution)",
+      "Eval pipeline for hallucination detection",
+      "Quantified improvement over time"
+    ]
+  },
+  {
+    "id": "agentic_eval_03",
+    "track": "agentic",
+    "type": "behavioral",
+    "role": "AGENTIC_ENGINEER",
+    "category": "evaluation_metrics",
+    "difficulty": "expert",
+    "question": "Tell me about a time you used pass@k or a similar metric for code generation quality. How did you set up the evaluation, and what did the results tell you?",
+    "tags": ["code_generation", "pass_at_k", "benchmarking", "automated_eval"],
+    "ideal_answer_points": [
+      "pass@k methodology and why it's appropriate for code",
+      "Test harness design (sandboxed execution, timeout, validation)",
+      "Benchmark dataset selection and curation",
+      "Results interpretation and actionable insights",
+      "Trade-off between k (compute cost) and confidence"
+    ]
+  },
+  {
+    "id": "agentic_eval_04",
+    "track": "agentic",
+    "type": "behavioral",
+    "role": "AGENTIC_ENGINEER",
+    "category": "evaluation_metrics",
+    "difficulty": "hard",
+    "question": "Describe a time you had to optimize Time to First Token (TTFT) or overall latency for a user-facing agent. What bottlenecks did you find, and how did you fix them?",
+    "tags": ["latency", "ttft", "performance", "optimization", "streaming"],
+    "ideal_answer_points": [
+      "Profiling methodology (where time was spent)",
+      "Bottleneck identification (model inference, retrieval, tool calls)",
+      "Optimization techniques (streaming, caching, parallel execution)",
+      "User-perceived latency vs actual latency",
+      "Quantified improvement"
+    ]
+  },
+  {
+    "id": "agentic_eval_05",
+    "track": "agentic",
+    "type": "behavioral",
+    "role": "AGENTIC_ENGINEER",
+    "category": "evaluation_metrics",
+    "difficulty": "hard",
+    "question": "Tell me about a time you had to determine whether a bad agent response was caused by retrieval (wrong documents) or generation (wrong interpretation of right documents). How did you build a blame attribution system?",
+    "tags": ["rag", "blame_attribution", "debugging", "retrieval_vs_generation"],
+    "ideal_answer_points": [
+      "Decomposed evaluation: retrieval quality vs generation quality",
+      "Retrieval metrics (recall, precision, MRR, relevance scoring)",
+      "Generation metrics (faithfulness, coverage, coherence)",
+      "Logging pipeline that preserves retrieval results for debugging",
+      "Actionable insights from blame attribution"
+    ]
+  },
+  {
+    "id": "agentic_ethics_01",
+    "track": "agentic",
+    "type": "behavioral",
+    "role": "AGENTIC_ENGINEER",
+    "category": "ethics_policy",
+    "difficulty": "hard",
+    "question": "Tell me about a time someone on your team (or a stakeholder) expressed concern that the agent you were building would replace human jobs. How did you address their concern?",
+    "tags": ["job_displacement", "stakeholder_management", "ethics", "communication"],
+    "ideal_answer_points": [
+      "Acknowledged the concern genuinely, not dismissively",
+      "Framed the agent as augmentation, not replacement",
+      "Concrete examples of how the agent changed (not eliminated) roles",
+      "Stakeholder communication strategy",
+      "Long-term thinking about responsible deployment"
+    ]
+  },
+  {
+    "id": "agentic_ethics_02",
+    "track": "agentic",
+    "type": "behavioral",
+    "role": "AGENTIC_ENGINEER",
+    "category": "ethics_policy",
+    "difficulty": "expert",
+    "question": "Describe a situation where your agent generated or used content that was potentially copyrighted. How did you handle the legal and ethical dimensions?",
+    "tags": ["copyright", "legal", "ip", "content_generation", "compliance"],
+    "ideal_answer_points": [
+      "Specific scenario and how copyright risk was identified",
+      "Legal consultation and compliance framework",
+      "Technical mitigations (attribution, filtering, source tracking)",
+      "Policy decisions about acceptable use",
+      "Ongoing monitoring for copyright issues"
+    ]
+  },
+  {
+    "id": "agentic_ethics_03",
+    "track": "agentic",
+    "type": "behavioral",
+    "role": "AGENTIC_ENGINEER",
+    "category": "ethics_policy",
+    "difficulty": "hard",
+    "question": "Tell me about a time you observed users becoming over-reliant on your agent — trusting it too much and not applying their own judgment. What did you do about it?",
+    "tags": ["over_reliance", "user_behavior", "trust_calibration", "ux"],
+    "ideal_answer_points": [
+      "How over-reliance was detected (metrics, user research)",
+      "Specific harms from over-reliance",
+      "UX changes to encourage critical thinking (confidence signals, caveats)",
+      "Calibration: helping users understand when to trust vs verify",
+      "Measuring the impact of trust calibration changes"
+    ]
+  },
+  {
+    "id": "agentic_ethics_04",
+    "track": "agentic",
+    "type": "behavioral",
+    "role": "AGENTIC_ENGINEER",
+    "category": "ethics_policy",
+    "difficulty": "hard",
+    "question": "Describe a situation where your agent worked well for users in one culture or language but failed for users in another. How did you discover the gap and address it?",
+    "tags": ["global_bias", "localization", "cultural_sensitivity", "fairness"],
+    "ideal_answer_points": [
+      "Discovery method (metrics segmented by region/language, user reports)",
+      "Root cause (training data bias, English-centric prompts, cultural assumptions)",
+      "Localization strategy beyond just translation",
+      "Eval suite expansion for multilingual/multicultural quality",
+      "Ongoing monitoring across demographics"
+    ]
+  },
+  {
+    "id": "agentic_ethics_05",
+    "track": "agentic",
+    "type": "behavioral",
+    "role": "AGENTIC_ENGINEER",
+    "category": "ethics_policy",
+    "difficulty": "hard",
+    "question": "Tell me about a time you dealt with sycophancy in an AI agent — the agent agreeing with users even when they were wrong. How did you detect it and what did you do?",
+    "tags": ["sycophancy", "truthfulness", "alignment", "user_trust"],
+    "ideal_answer_points": [
+      "Detection: eval cases where agent should disagree but doesn't",
+      "Measurement: sycophancy rate across different user inputs",
+      "Mitigation: prompt engineering, RLHF, constitutional AI approaches",
+      "Trade-off: helpfulness vs truthfulness",
+      "User research on preference for truth vs agreement"
+    ]
+  },
+  {
+    "id": "sys_design_01",
+    "track": "agentic",
+    "type": "system_design",
+    "role": "AGENTIC_ENGINEER",
+    "category": "architecture",
+    "difficulty": "expert",
+    "question": "Design an autonomous coding agent that takes a GitHub issue URL and produces a working pull request — including code changes, tests, and a PR description. Think 'Devin' or 'SWE-Agent'.",
+    "tags": ["coding_agent", "sandbox", "docker", "security", "code_generation"],
+    "ideal_answer_points": [
+      "Sandboxed execution environment (Docker, Firecracker)",
+      "AST-based code retrieval for relevant context",
+      "TDD loop: write test → implement → verify → iterate",
+      "Safety: no network access from sandbox, resource limits",
+      "Planning loop with iterative refinement",
+      "Observability: trace each step for debugging"
+    ]
+  },
+  {
+    "id": "sys_design_02",
+    "track": "agentic",
+    "type": "system_design",
+    "role": "AGENTIC_ENGINEER",
+    "category": "architecture",
+    "difficulty": "expert",
+    "question": "Design an enterprise knowledge brain — a RAG system that can answer questions across 10,000+ internal documents, Slack threads, and Jira tickets. It must handle access control, freshness, and scale to 1000 queries/minute.",
+    "tags": ["rag", "enterprise", "access_control", "scale", "search"],
+    "ideal_answer_points": [
+      "Ingestion pipeline with document parsing and chunking",
+      "Embedding model selection and vector store architecture",
+      "Access control at retrieval time (not just ingestion)",
+      "Freshness: incremental indexing, TTL, source prioritization",
+      "Query pipeline: rewrite → retrieve → rerank → generate",
+      "Scale: horizontal scaling, caching, async processing"
+    ]
+  },
+  {
+    "id": "sys_design_03",
+    "track": "agentic",
+    "type": "system_design",
+    "role": "AGENTIC_ENGINEER",
+    "category": "architecture",
+    "difficulty": "expert",
+    "question": "Design a real-time voice support agent that can handle customer calls, look up account information, process refunds, and escalate to human agents when needed. Latency budget: <500ms for voice responses.",
+    "tags": ["voice", "real_time", "latency", "escalation", "streaming"],
+    "ideal_answer_points": [
+      "Speech pipeline: ASR → NLU → Agent → TTS (streaming)",
+      "Latency budget allocation across components",
+      "Tool integration for account lookup and refund processing",
+      "Escalation logic: confidence thresholds, user request, safety triggers",
+      "State management across conversation turns",
+      "Fallback and error handling for voice-specific issues"
+    ]
+  },
+  {
+    "id": "sys_design_04",
+    "track": "agentic",
+    "type": "system_design",
+    "role": "AGENTIC_ENGINEER",
+    "category": "architecture",
+    "difficulty": "expert",
+    "question": "Design a text-to-SQL data analyst agent that lets non-technical business users ask questions about their data in natural language and get accurate, safe SQL queries. The system must handle ambiguous queries, prevent destructive operations, and work across multiple database schemas.",
+    "tags": ["text_to_sql", "data_analyst", "safety", "schema", "natural_language"],
+    "ideal_answer_points": [
+      "Schema understanding and metadata management",
+      "Query disambiguation (clarifying questions to user)",
+      "SQL generation with safety constraints (SELECT only, row limits)",
+      "Query validation before execution",
+      "Result presentation and visualization",
+      "Multi-schema support and context switching"
+    ]
+  },
+  {
+    "id": "sys_design_05",
+    "track": "agentic",
+    "type": "system_design",
+    "role": "AGENTIC_ENGINEER",
+    "category": "architecture",
+    "difficulty": "expert",
+    "question": "Design an infinite memory personal assistant that can remember everything a user has ever told it, retrieve relevant context from years of conversations, and proactively surface information when relevant. It must handle 100K+ messages per user while staying within LLM context limits.",
+    "tags": ["memory", "personal_assistant", "context_management", "retrieval", "scale"],
+    "ideal_answer_points": [
+      "Memory architecture: short-term (context window) + long-term (vector store + structured DB)",
+      "Memory extraction and summarization pipeline",
+      "Retrieval strategy: semantic search + recency + importance scoring",
+      "Context window management: what to include vs. what to summarize",
+      "Proactive surfacing: triggers and relevance scoring",
+      "Privacy: user control over memory, deletion, export"
+    ]
+  }
+]

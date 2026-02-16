@@ -50,12 +50,18 @@ async def get_random_question(
     competency: Optional[str] = None,
     difficulty: Optional[str] = None,
     level: Optional[str] = None,
+    track: Optional[str] = None,
+    interview_type: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
 ):
     """Get a random question, optionally filtered.
 
     Used by mock interview mode and the 'surprise me' button.
     Only returns approved questions (curated + approved community).
+
+    New filters for agentic track:
+    - track: "standard" or "agentic"
+    - interview_type: "behavioral" or "system_design"
     """
     query = (
         select(Question)
@@ -71,6 +77,10 @@ async def get_random_question(
         query = query.where(Question.difficulty == difficulty)
     if level:
         query = query.where(Question.level_band == level)
+    if track:
+        query = query.where(Question.track == track)
+    if interview_type:
+        query = query.where(Question.interview_type == interview_type)
 
     # ORDER BY RANDOM() LIMIT 1 — fine for <1000 rows
     query = query.order_by(func.random()).limit(1)
@@ -93,6 +103,8 @@ async def list_questions(
     company: Optional[str] = None,
     search: Optional[str] = None,
     source: Optional[str] = None,
+    track: Optional[str] = None,
+    interview_type: Optional[str] = None,
     skip: int = 0,
     limit: int = 20,
     db: AsyncSession = Depends(get_db),
@@ -103,13 +115,15 @@ async def list_questions(
     still pending moderation won't appear here.
 
     Supports filtering by:
-    - role: MLE, PM, TPM, EM
+    - role: MLE, PM, TPM, EM, AGENTIC
     - competency: conflict, leadership, technical_challenge, etc.
-    - difficulty: standard, advanced, senior_plus
+    - difficulty: standard, advanced, senior_plus, hard, expert
     - level: entry, mid, senior, staff, manager (level band)
     - company: Amazon, Meta, etc. (questions commonly asked at)
     - search: full-text search on question_text
     - source: curated, community (filter by origin)
+    - track: standard, agentic
+    - interview_type: behavioral, system_design
 
     Results are ordered by usage_count (most popular first).
     """
@@ -133,6 +147,10 @@ async def list_questions(
         query = query.where(Question.question_text.ilike(f"%{search}%"))
     if source:
         query = query.where(Question.source == source)
+    if track:
+        query = query.where(Question.track == track)
+    if interview_type:
+        query = query.where(Question.interview_type == interview_type)
 
     # Count total matching
     count_query = select(func.count()).select_from(query.subquery())

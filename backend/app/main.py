@@ -35,6 +35,7 @@ from app.routers import (
     mock_interview,
     oauth,
     questions,
+    scenarios,
     templates,
 )
 
@@ -94,6 +95,7 @@ app.include_router(mock_interview.router)
 app.include_router(generator.router)
 app.include_router(coaching.router)
 app.include_router(templates.router)
+app.include_router(scenarios.router)
 
 
 # --- Health Check Endpoints ---

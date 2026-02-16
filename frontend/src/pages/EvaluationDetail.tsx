@@ -60,6 +60,7 @@ import {
   getEvaluationSuggestions,
   SuggestionItem,
 } from "../api/client";
+import AgenticEvaluationView from "../components/AgenticEvaluationView";
 import ScoreBar from "../components/ScoreBar";
 import SimpleMarkdown from "../components/SimpleMarkdown";
 import PageLoader from "../components/PageLoader";
@@ -287,6 +288,8 @@ export default function EvaluationDetail() {
         <Typography color="text.secondary">
           {evaluation.status === "queued"
             ? "Your answer is queued. Analysis will begin shortly."
+            : evaluation.evaluation_type === "agentic"
+            ? "Claude is evaluating your answer with agentic criteria. This typically takes 10-20 seconds."
             : "Claude is evaluating your STAR answer across 6 dimensions. This typically takes 15-30 seconds."}
         </Typography>
         <Chip
@@ -342,11 +345,21 @@ export default function EvaluationDetail() {
             gutterBottom
             sx={{ fontSize: { xs: "1.4rem", sm: "2.125rem" } }}
           >
-            Evaluation Results
+            {evaluation.evaluation_type === "agentic"
+              ? "Agentic Evaluation"
+              : "Evaluation Results"}
             {evaluation.version_number && (
               <Chip
                 label={`v${evaluation.version_number}`}
                 size="small"
+                sx={{ ml: 1, verticalAlign: "middle" }}
+              />
+            )}
+            {evaluation.evaluation_type === "agentic" && (
+              <Chip
+                label="AGENTIC"
+                size="small"
+                color="primary"
                 sx={{ ml: 1, verticalAlign: "middle" }}
               />
             )}
@@ -547,6 +560,10 @@ export default function EvaluationDetail() {
         </Card>
       </Collapse>
 
+      {/* Agentic evaluations use a completely different layout */}
+      {evaluation.evaluation_type === "agentic" ? (
+        <AgenticEvaluationView evaluation={evaluation} />
+      ) : (
       <Grid container spacing={3}>
         {/* Score Panel */}
         <Grid item xs={12} md={4}>
@@ -829,6 +846,7 @@ export default function EvaluationDetail() {
             )}
         </Grid>
       </Grid>
+      )}
 
       {/* Upgrade prompt when tier limit is reached */}
       <UpgradePrompt

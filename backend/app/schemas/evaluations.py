@@ -38,6 +38,10 @@ class EvaluationResponse(BaseModel):
 
     The frontend polls this endpoint until status transitions from
     'queued' or 'analyzing' to 'completed' or 'failed'.
+
+    Supports both standard STAR and agentic evaluation types.
+    The evaluation_type field tells the frontend which score/display
+    format to use.
     """
 
     model_config = ConfigDict(from_attributes=True)
@@ -48,8 +52,9 @@ class EvaluationResponse(BaseModel):
     answer_text: Optional[str] = None  # the answer text that was evaluated
     version_number: Optional[int] = None
     status: str  # queued, analyzing, completed, failed
+    evaluation_type: str = "standard"  # standard, agentic
 
-    # Scores (null until completed)
+    # Standard STAR scores (null for agentic evaluations)
     situation_score: Optional[int] = None
     task_score: Optional[int] = None
     action_score: Optional[int] = None
@@ -58,14 +63,19 @@ class EvaluationResponse(BaseModel):
     overall_score: Optional[int] = None
     average_score: Optional[Decimal] = None
 
-    # Full evaluation content
+    # Agentic scores (null for standard evaluations)
+    agentic_scores: Optional[dict[str, int]] = None  # {dimension: 0-100}
+    agentic_result: Optional[dict[str, Any]] = None  # full JSON response
+    hiring_decision: Optional[str] = None  # STRONG_HIRE, HIRE, BORDERLINE, REJECT
+
+    # Full evaluation content (standard: markdown, agentic: null)
     evaluation_markdown: Optional[str] = None
     evaluation_sections: Optional[dict[str, Any]] = None
 
-    # Company alignment
+    # Company alignment (standard only)
     company_alignment: Optional[dict[str, Any]] = None
 
-    # Follow-up questions
+    # Follow-up questions (standard only)
     follow_up_questions: Optional[list[dict[str, Any]]] = None
 
     # Sharing
@@ -129,8 +139,9 @@ class SharedEvaluationResponse(BaseModel):
     company_name: Optional[str] = None
     target_role: Optional[str] = None
     question_text: Optional[str] = None
+    evaluation_type: str = "standard"  # standard, agentic
 
-    # Scores
+    # Standard STAR scores
     situation_score: Optional[int] = None
     task_score: Optional[int] = None
     action_score: Optional[int] = None
@@ -138,6 +149,11 @@ class SharedEvaluationResponse(BaseModel):
     engagement_score: Optional[int] = None
     overall_score: Optional[int] = None
     average_score: Optional[Decimal] = None
+
+    # Agentic scores
+    agentic_scores: Optional[dict[str, int]] = None
+    agentic_result: Optional[dict[str, Any]] = None
+    hiring_decision: Optional[str] = None
 
     # Feedback content (redacted — no answer text)
     evaluation_markdown: Optional[str] = None

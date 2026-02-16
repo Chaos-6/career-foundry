@@ -39,7 +39,7 @@ def _base_template(title: str, body_html: str) -> str:
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:20px 0;">
 <tr><td align="center">
 <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;">
-  <tr><td style="background:#1976d2;padding:24px 32px;">
+  <tr><td style="background:#1a365d;padding:24px 32px;">
     <h1 style="margin:0;color:#ffffff;font-size:20px;">{title}</h1>
   </td></tr>
   <tr><td style="padding:32px;">
@@ -47,8 +47,8 @@ def _base_template(title: str, body_html: str) -> str:
   </td></tr>
   <tr><td style="padding:16px 32px;background:#fafafa;border-top:1px solid #eee;">
     <p style="margin:0;font-size:12px;color:#999;">
-      BIAE — Behavioral Interview Answer Evaluator<br>
-      <a href="{settings.FRONTEND_URL}" style="color:#1976d2;">Open BIAE</a>
+      Career Foundry — AI Interview Coach<br>
+      <a href="{settings.FRONTEND_URL}" style="color:#2b6cb0;">Open Career Foundry</a>
     </p>
   </td></tr>
 </table>
@@ -60,12 +60,12 @@ def _base_template(title: str, body_html: str) -> str:
 
 def coaching_invite_email(coach_name: str, coach_email: str) -> tuple[str, str]:
     """Email sent to student when a coach invites them."""
-    subject = f"{coach_name or coach_email} invited you to coaching on BIAE"
+    subject = f"{coach_name or coach_email} invited you to coaching on Career Foundry"
     body = _base_template(
         "You've Been Invited!",
         f"""<p style="font-size:16px;color:#333;">
           <strong>{coach_name or coach_email}</strong> has invited you to join
-          their coaching program on BIAE.
+          their coaching program on Career Foundry.
         </p>
         <p style="font-size:14px;color:#666;">
           As a coached student, your coach can view your evaluation scores and
@@ -73,7 +73,7 @@ def coaching_invite_email(coach_name: str, coach_email: str) -> tuple[str, str]:
         </p>
         <p style="text-align:center;margin:24px 0;">
           <a href="{settings.FRONTEND_URL}/coaching"
-             style="display:inline-block;padding:12px 32px;background:#1976d2;color:#fff;
+             style="display:inline-block;padding:12px 32px;background:#1a365d;color:#fff;
                     text-decoration:none;border-radius:6px;font-weight:600;">
             View Invite
           </a>
@@ -100,7 +100,7 @@ def coaching_accepted_email(student_name: str, student_email: str) -> tuple[str,
         </p>
         <p style="text-align:center;margin:24px 0;">
           <a href="{settings.FRONTEND_URL}/coaching"
-             style="display:inline-block;padding:12px 32px;background:#1976d2;color:#fff;
+             style="display:inline-block;padding:12px 32px;background:#1a365d;color:#fff;
                     text-decoration:none;border-radius:6px;font-weight:600;">
             Open Coach Dashboard
           </a>
@@ -118,10 +118,10 @@ def question_approved_email(question_text: str) -> tuple[str, str]:
         "Question Approved",
         f"""<p style="font-size:16px;color:#333;">
           Your community question has been approved and is now live in the
-          BIAE Question Bank.
+          Career Foundry Question Bank.
         </p>
         <p style="font-size:14px;color:#666;background:#f0f7ff;padding:12px 16px;
-                  border-left:4px solid #1976d2;border-radius:4px;">
+                  border-left:4px solid #2b6cb0;border-radius:4px;">
           &ldquo;{preview}&rdquo;
         </p>
         <p style="font-size:14px;color:#666;">
@@ -143,7 +143,7 @@ def question_rejected_email(question_text: str, reason: str) -> tuple[str, str]:
           this time.
         </p>
         <p style="font-size:14px;color:#666;background:#f0f7ff;padding:12px 16px;
-                  border-left:4px solid #1976d2;border-radius:4px;">
+                  border-left:4px solid #2b6cb0;border-radius:4px;">
           &ldquo;{preview}&rdquo;
         </p>
         <p style="font-size:14px;color:#333;"><strong>Reason:</strong></p>

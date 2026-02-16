@@ -135,6 +135,10 @@ export default function MockInterview() {
           level_band: null,
           source: "curated",
           usage_count: 0,
+          track: "standard",
+          interview_type: "behavioral",
+          tags: [],
+          ideal_answer_points: [],
         };
       } else {
         q = await getRandomQuestion({

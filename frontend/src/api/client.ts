@@ -177,6 +177,10 @@ export interface Question {
   level_band: string | null;
   source: string;
   usage_count: number;
+  track: string;               // "standard" | "agentic"
+  interview_type: string;      // "behavioral" | "system_design"
+  tags: string[];
+  ideal_answer_points: string[];
 }
 
 export interface QuestionList {
@@ -211,6 +215,25 @@ export interface Answer {
   versions?: AnswerVersion[];
 }
 
+export interface AgenticScores {
+  [dimension: string]: number;  // dimension_name → 0-100
+}
+
+export interface AgenticResult {
+  scores: AgenticScores;
+  hiring_decision: string;
+  summary_feedback?: string;
+  feedback_summary?: string;
+  red_flags?: string[];
+  missing_components?: string[];
+  the_diff: {
+    user_answer_critique?: string;
+    staff_engineer_rewrite?: string;
+    candidate_approach?: string;
+    staff_architect_approach?: string;
+  };
+}
+
 export interface Evaluation {
   id: string;
   answer_version_id: string;
@@ -218,6 +241,9 @@ export interface Evaluation {
   answer_text: string | null;      // the answer text that was evaluated
   version_number: number | null;   // which version this evaluation is for
   status: "queued" | "analyzing" | "completed" | "failed";
+  evaluation_type: string;         // "standard" | "agentic"
+
+  // Standard STAR scores (1-5)
   situation_score: number | null;
   task_score: number | null;
   action_score: number | null;
@@ -225,6 +251,12 @@ export interface Evaluation {
   engagement_score: number | null;
   overall_score: number | null;
   average_score: number | null;
+
+  // Agentic scores (0-100)
+  agentic_scores: AgenticScores | null;
+  agentic_result: AgenticResult | null;
+  hiring_decision: string | null;
+
   evaluation_markdown: string | null;
   evaluation_sections: Record<string, any> | null;
   company_alignment: Record<string, any> | null;
@@ -1002,6 +1034,55 @@ export async function updateTemplate(
 
 export async function deleteTemplate(id: string): Promise<void> {
   await api.delete(`/api/v1/templates/${id}`);
+}
+
+// ---------------------------------------------------------------------------
+// Agentic Scenarios endpoints
+// ---------------------------------------------------------------------------
+
+export interface Scenario {
+  id: string;
+  track: string;
+  type: string;             // "behavioral" | "system_design"
+  role: string;
+  category: string;
+  difficulty: string;
+  question: string;
+  tags: string[];
+  ideal_answer_points: string[];
+}
+
+export interface ScenarioList {
+  items: Scenario[];
+  total: number;
+}
+
+export async function listScenarios(params?: {
+  track?: string;
+  role?: string;
+  category?: string;
+  interview_type?: string;
+  difficulty?: string;
+}): Promise<ScenarioList> {
+  const { data } = await api.get<ScenarioList>("/api/v1/scenarios", { params });
+  return data;
+}
+
+export async function getRandomScenario(params?: {
+  track?: string;
+  category?: string;
+  interview_type?: string;
+  difficulty?: string;
+}): Promise<Scenario> {
+  const { data } = await api.get<Scenario>("/api/v1/scenarios/random", { params });
+  return data;
+}
+
+export async function getScenarioCategories(track = "agentic"): Promise<string[]> {
+  const { data } = await api.get<string[]>("/api/v1/scenarios/categories", {
+    params: { track },
+  });
+  return data;
 }
 
 export default api;
