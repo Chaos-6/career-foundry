@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class QuestionResponse(BaseModel):
@@ -23,6 +23,12 @@ class QuestionResponse(BaseModel):
     interview_type: str = "behavioral"  # behavioral, system_design
     tags: list[str] = []  # freeform tags
     ideal_answer_points: list[str] = []  # key points a good answer should hit
+
+    @field_validator("tags", "ideal_answer_points", mode="before")
+    @classmethod
+    def coerce_null_to_list(cls, v):
+        """Existing DB rows have NULL for new JSONB columns — coerce to []."""
+        return v if v is not None else []
 
     model_config = {"from_attributes": True}
 
