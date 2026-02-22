@@ -51,6 +51,8 @@ class EvaluationResponse(BaseModel):
     answer_id: Optional[UUID] = None  # parent answer — needed for revision flow
     answer_text: Optional[str] = None  # the answer text that was evaluated
     version_number: Optional[int] = None
+    question_id: Optional[UUID] = None  # source question — for "back to question" link
+    question_text: Optional[str] = None  # resolved question text (bank or custom)
     status: str  # queued, analyzing, completed, failed
     evaluation_type: str = "standard"  # standard, agentic
 

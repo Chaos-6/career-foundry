@@ -12,9 +12,9 @@
  * - Pagination with "Load More"
  */
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Alert,
   Autocomplete,
@@ -38,6 +38,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
+import IconButton from "@mui/material/IconButton";
 import SearchIcon from "@mui/icons-material/Search";
 import RateReviewIcon from "@mui/icons-material/RateReview";
 import TimerIcon from "@mui/icons-material/Timer";
@@ -46,8 +47,18 @@ import ShuffleIcon from "@mui/icons-material/Shuffle";
 import ClearIcon from "@mui/icons-material/Clear";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import PeopleIcon from "@mui/icons-material/People";
+import BookmarkIcon from "@mui/icons-material/Bookmark";
+import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
 
-import { listQuestions, getRandomQuestion, submitQuestion, Question } from "../api/client";
+import {
+  listQuestions,
+  getRandomQuestion,
+  submitQuestion,
+  bookmarkQuestion,
+  unbookmarkQuestion,
+  getBookmarkedQuestionIds,
+  Question,
+} from "../api/client";
 import { useAuth } from "../hooks/useAuth";
 
 const ROLES = ["MLE", "PM", "TPM", "EM"];
@@ -94,6 +105,7 @@ export default function QuestionBank() {
   const [competency, setCompetency] = useState("");
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
+  const [showBookmarked, setShowBookmarked] = useState(false);
 
   // Submit question dialog state
   const [submitOpen, setSubmitOpen] = useState(false);
@@ -118,7 +130,57 @@ export default function QuestionBank() {
       }),
   });
 
-  const hasFilters = role || difficulty || levelBand || competency || search;
+  // Parallel count queries for level band badges — pass current filters but
+  // vary the level param so each badge shows contextual counts.
+  const levelCountQueries = useQueries({
+    queries: LEVEL_BANDS.map((lb) => ({
+      queryKey: ["question-count", lb.value, role, difficulty, competency, search],
+      queryFn: () =>
+        listQuestions({
+          level: lb.value,
+          role: role || undefined,
+          difficulty: difficulty || undefined,
+          competency: competency || undefined,
+          search: search || undefined,
+          limit: 1,
+        }),
+      staleTime: 60_000, // counts don't change often
+    })),
+  });
+
+  const levelCounts: Record<string, number | null> = {};
+  LEVEL_BANDS.forEach((lb, i) => {
+    const q = levelCountQueries[i];
+    levelCounts[lb.value] = q.data ? q.data.total : null;
+  });
+
+  const hasFilters = role || difficulty || levelBand || competency || search || showBookmarked;
+
+  // Bookmark queries (only for authenticated users)
+  const { data: bookmarkedIds = [], refetch: refetchBookmarks } = useQuery({
+    queryKey: ["bookmarked-question-ids"],
+    queryFn: getBookmarkedQuestionIds,
+    enabled: isAuthenticated,
+    staleTime: 30_000,
+  });
+
+  const bookmarkedSet = new Set(bookmarkedIds);
+
+  const handleToggleBookmark = useCallback(
+    async (questionId: string) => {
+      try {
+        if (bookmarkedSet.has(questionId)) {
+          await unbookmarkQuestion(questionId);
+        } else {
+          await bookmarkQuestion(questionId);
+        }
+        refetchBookmarks();
+      } catch {
+        // Silently fail — user can retry
+      }
+    },
+    [bookmarkedSet, refetchBookmarks]
+  );
 
   // Submit question mutation
   const submitMutation = useMutation({
@@ -173,6 +235,7 @@ export default function QuestionBank() {
     setCompetency("");
     setSearch("");
     setSearchInput("");
+    setShowBookmarked(false);
   };
 
   const handleSearch = () => {
@@ -294,11 +357,29 @@ export default function QuestionBank() {
                   onChange={(e) => setLevelBand(e.target.value)}
                 >
                   <MenuItem value="">All Levels</MenuItem>
-                  {LEVEL_BANDS.map((lb) => (
-                    <MenuItem key={lb.value} value={lb.value}>
-                      {lb.label}
-                    </MenuItem>
-                  ))}
+                  {LEVEL_BANDS.map((lb) => {
+                    const count = levelCounts[lb.value];
+                    return (
+                      <MenuItem
+                        key={lb.value}
+                        value={lb.value}
+                        disabled={count === 0}
+                      >
+                        <Stack direction="row" alignItems="center" spacing={1} sx={{ width: "100%" }}>
+                          <span>{lb.label}</span>
+                          {count !== null && (
+                            <Chip
+                              label={count}
+                              size="small"
+                              sx={{ height: 20, fontSize: 11, ml: "auto" }}
+                              color={count === 0 ? "default" : "primary"}
+                              variant="outlined"
+                            />
+                          )}
+                        </Stack>
+                      </MenuItem>
+                    );
+                  })}
                 </Select>
               </FormControl>
 
@@ -350,6 +431,19 @@ export default function QuestionBank() {
                 </Button>
               )}
             </Stack>
+
+            {/* Bookmark filter */}
+            {isAuthenticated && (
+              <Stack direction="row" spacing={1}>
+                <Chip
+                  icon={<BookmarkIcon />}
+                  label={`My Bookmarks${bookmarkedIds.length > 0 ? ` (${bookmarkedIds.length})` : ""}`}
+                  variant={showBookmarked ? "filled" : "outlined"}
+                  color={showBookmarked ? "primary" : "default"}
+                  onClick={() => setShowBookmarked(!showBookmarked)}
+                />
+              </Stack>
+            )}
           </Stack>
         </CardContent>
       </Card>
@@ -393,10 +487,42 @@ export default function QuestionBank() {
         </Card>
       )}
 
+      {/* Sparse results hint */}
+      {!isLoading && data && data.total > 0 && data.total < 10 && hasFilters && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Only {data.total} question{data.total !== 1 ? "s" : ""} match these
+          filters. Try broadening your search for more results.
+        </Alert>
+      )}
+
       {/* Question list */}
-      {!isLoading && data && data.items.length > 0 && (
+      {!isLoading && data && data.items.length > 0 && (() => {
+        const displayItems = showBookmarked
+          ? data.items.filter((q) => bookmarkedSet.has(q.id))
+          : data.items;
+
+        if (showBookmarked && displayItems.length === 0) {
+          return (
+            <Card>
+              <CardContent sx={{ textAlign: "center", py: 6 }}>
+                <BookmarkBorderIcon sx={{ fontSize: 48, color: "text.disabled", mb: 2 }} />
+                <Typography variant="h6" color="text.secondary">
+                  No bookmarked questions
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Click the bookmark icon on any question to save it here.
+                </Typography>
+                <Button variant="outlined" onClick={() => setShowBookmarked(false)}>
+                  Show All Questions
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        }
+
+        return (
         <Grid container spacing={2}>
-          {data.items.map((q: Question) => (
+          {displayItems.map((q: Question) => (
             <Grid item xs={12} key={q.id}>
               <Card
                 sx={{
@@ -405,9 +531,22 @@ export default function QuestionBank() {
                 }}
               >
                 <CardContent>
-                  <Typography variant="body1" sx={{ mb: 1.5 }}>
-                    {q.question_text}
-                  </Typography>
+                  <Stack direction="row" alignItems="flex-start" spacing={1}>
+                    <Typography variant="body1" sx={{ mb: 1.5, flex: 1 }}>
+                      {q.question_text}
+                    </Typography>
+                    {isAuthenticated && (
+                      <Tooltip title={bookmarkedSet.has(q.id) ? "Remove bookmark" : "Bookmark question"}>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleToggleBookmark(q.id)}
+                          color={bookmarkedSet.has(q.id) ? "primary" : "default"}
+                        >
+                          {bookmarkedSet.has(q.id) ? <BookmarkIcon /> : <BookmarkBorderIcon />}
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                  </Stack>
 
                   {/* Tags row */}
                   <Stack
@@ -514,7 +653,8 @@ export default function QuestionBank() {
             </Grid>
           ))}
         </Grid>
-      )}
+        );
+      })()}
 
       {/* Results count footer */}
       {!isLoading && data && data.items.length > 0 && (

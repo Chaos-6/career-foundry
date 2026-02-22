@@ -45,7 +45,10 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import LoginIcon from "@mui/icons-material/Login";
 import LogoutIcon from "@mui/icons-material/Logout";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
+import DarkModeIcon from "@mui/icons-material/DarkMode";
+import LightModeIcon from "@mui/icons-material/LightMode";
 import { useAuth } from "../hooks/useAuth";
+import { useThemeMode } from "../hooks/useThemeMode";
 
 const DRAWER_WIDTH = 256;
 
@@ -102,6 +105,7 @@ export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isAuthenticated, logout } = useAuth();
+  const { mode, toggleMode } = useThemeMode();
 
   // Build nav groups — moderators get an extra link
   const navGroups = React.useMemo(() => {
@@ -347,6 +351,16 @@ export default function Layout() {
           )}
 
           {!isMobile && <Box sx={{ flexGrow: 1 }} />}
+
+          {/* Dark mode toggle */}
+          <Tooltip title={mode === "dark" ? "Switch to light mode" : "Switch to dark mode"}>
+            <IconButton
+              onClick={toggleMode}
+              sx={{ mr: 1, color: "text.secondary" }}
+            >
+              {mode === "dark" ? <LightModeIcon /> : <DarkModeIcon />}
+            </IconButton>
+          </Tooltip>
 
           {/* Auth section */}
           {isAuthenticated ? (

@@ -146,8 +146,8 @@ export default function NewEvaluation() {
   });
 
   const { data: categories = [] } = useQuery({
-    queryKey: ["scenario-categories"],
-    queryFn: () => getScenarioCategories("agentic"),
+    queryKey: ["scenario-categories", agenticType],
+    queryFn: () => getScenarioCategories("agentic", agenticType),
     enabled: isAgentic,
   });
 
@@ -473,7 +473,11 @@ export default function NewEvaluation() {
                     <Select
                       value={agenticType}
                       label="Type"
-                      onChange={(e) => setAgenticType(e.target.value)}
+                      onChange={(e) => {
+                        setAgenticType(e.target.value);
+                        setAgenticCategory("");
+                        setSelectedScenarioId("");
+                      }}
                     >
                       <MenuItem value="behavioral">Behavioral</MenuItem>
                       <MenuItem value="system_design">System Design</MenuItem>
@@ -605,6 +609,14 @@ export default function NewEvaluation() {
                     ))}
                   </Select>
                 </FormControl>
+
+                {/* Empty state: no scenarios match the current filters */}
+                {scenarios && scenarios.items.length === 0 && (
+                  <Alert severity="info">
+                    No scenarios match this combination. Try adjusting the type
+                    or category, or type a custom question below.
+                  </Alert>
+                )}
 
                 {selectedScenarioId && scenarios?.items.find(s => s.id === selectedScenarioId) && (
                   <Alert severity="info">

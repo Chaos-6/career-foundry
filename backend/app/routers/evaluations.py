@@ -149,6 +149,23 @@ async def get_evaluation(
         response.answer_text = version.answer_text
         response.version_number = version.version_number
 
+        # Follow chain: AnswerVersion → Answer → Question for "back to question" link
+        answer_result = await db.execute(
+            select(Answer).where(Answer.id == version.answer_id)
+        )
+        answer = answer_result.scalar_one_or_none()
+        if answer:
+            response.question_id = answer.question_id
+            # Resolve question text: custom_question_text wins, else look up Question
+            question_text = answer.custom_question_text
+            if answer.question_id and not question_text:
+                q_result = await db.execute(
+                    select(Question).where(Question.id == answer.question_id)
+                )
+                question = q_result.scalar_one_or_none()
+                question_text = question.question_text if question else None
+            response.question_text = question_text
+
     return response
 
 

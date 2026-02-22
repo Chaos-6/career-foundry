@@ -38,6 +38,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 
 import { getAnswerComparison, VersionScoreSummary } from "../api/client";
+import AppBreadcrumbs from "../components/AppBreadcrumbs";
 import PageLoader from "../components/PageLoader";
 
 const DIMENSIONS = [
@@ -144,6 +145,13 @@ export default function VersionComparison() {
 
   return (
     <Box sx={{ maxWidth: 960, mx: "auto" }}>
+      <AppBreadcrumbs
+        crumbs={[
+          { label: "Dashboard", path: "/" },
+          { label: "Compare Versions" },
+        ]}
+      />
+
       {/* Header */}
       <Stack
         direction="row"

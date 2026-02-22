@@ -240,6 +240,8 @@ export interface Evaluation {
   answer_id: string | null;        // parent answer — for revision flow
   answer_text: string | null;      // the answer text that was evaluated
   version_number: number | null;   // which version this evaluation is for
+  question_id: string | null;      // source question — for "back to question" link
+  question_text: string | null;    // resolved question text (bank or custom)
   status: "queued" | "analyzing" | "completed" | "failed";
   evaluation_type: string;         // "standard" | "agentic"
 
@@ -381,6 +383,23 @@ export async function submitQuestion(payload: {
   level_band?: string;
 }): Promise<Question> {
   const { data } = await api.post<Question>("/api/v1/questions", payload);
+  return data;
+}
+
+// ---------------------------------------------------------------------------
+// Question Bookmarks
+// ---------------------------------------------------------------------------
+
+export async function bookmarkQuestion(questionId: string): Promise<void> {
+  await api.post(`/api/v1/questions/${questionId}/bookmark`);
+}
+
+export async function unbookmarkQuestion(questionId: string): Promise<void> {
+  await api.delete(`/api/v1/questions/${questionId}/bookmark`);
+}
+
+export async function getBookmarkedQuestionIds(): Promise<string[]> {
+  const { data } = await api.get<string[]>("/api/v1/questions/bookmarked/ids");
   return data;
 }
 
@@ -1078,9 +1097,12 @@ export async function getRandomScenario(params?: {
   return data;
 }
 
-export async function getScenarioCategories(track = "agentic"): Promise<string[]> {
+export async function getScenarioCategories(
+  track = "agentic",
+  interviewType?: string,
+): Promise<string[]> {
   const { data } = await api.get<string[]>("/api/v1/scenarios/categories", {
-    params: { track },
+    params: { track, interview_type: interviewType || undefined },
   });
   return data;
 }

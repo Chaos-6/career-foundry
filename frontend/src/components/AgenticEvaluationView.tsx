@@ -12,13 +12,15 @@
  * when evaluation_type === "agentic".
  */
 
-import React from "react";
+import React, { useState } from "react";
 import {
   Alert,
   Box,
+  Button,
   Card,
   CardContent,
   Chip,
+  Collapse,
   Divider,
   Grid,
   Paper,
@@ -29,6 +31,8 @@ import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import StarIcon from "@mui/icons-material/Star";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import PersonIcon from "@mui/icons-material/Person";
 
 import type { Evaluation } from "../api/client";
 
@@ -584,7 +588,72 @@ export default function AgenticEvaluationView({
             </Grid>
           </CardContent>
         </Card>
+
+        {/* Collapsible: View My Original Answer */}
+        {evaluation.answer_text && (
+          <OriginalAnswerSection answerText={evaluation.answer_text} />
+        )}
       </Grid>
     </Grid>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Original Answer — collapsible comparison
+// ---------------------------------------------------------------------------
+
+function OriginalAnswerSection({ answerText }: { answerText: string }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <Card variant="outlined" sx={{ mt: 2 }}>
+      <CardContent sx={{ py: 1.5, "&:last-child": { pb: 1.5 } }}>
+        <Button
+          fullWidth
+          onClick={() => setExpanded(!expanded)}
+          startIcon={<PersonIcon />}
+          endIcon={
+            <ExpandMoreIcon
+              sx={{
+                transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
+                transition: "transform 0.2s",
+              }}
+            />
+          }
+          sx={{
+            justifyContent: "space-between",
+            textTransform: "none",
+            fontWeight: 600,
+            color: "text.primary",
+          }}
+        >
+          View My Original Answer
+        </Button>
+        <Collapse in={expanded}>
+          <Paper
+            elevation={0}
+            sx={{
+              mt: 1.5,
+              p: 2,
+              bgcolor: "action.hover",
+              borderRadius: 2,
+              border: 1,
+              borderColor: "divider",
+            }}
+          >
+            <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
+              {answerText}
+            </Typography>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", mt: 1 }}
+            >
+              {answerText.trim().split(/\s+/).length} words
+            </Typography>
+          </Paper>
+        </Collapse>
+      </CardContent>
+    </Card>
   );
 }

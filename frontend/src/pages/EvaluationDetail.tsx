@@ -39,6 +39,7 @@ import CheckIcon from "@mui/icons-material/Check";
 import DownloadIcon from "@mui/icons-material/Download";
 import EditIcon from "@mui/icons-material/Edit";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import QuizIcon from "@mui/icons-material/Quiz";
 import LinkOffIcon from "@mui/icons-material/LinkOff";
 import SendIcon from "@mui/icons-material/Send";
 import ShareIcon from "@mui/icons-material/Share";
@@ -61,6 +62,7 @@ import {
   SuggestionItem,
 } from "../api/client";
 import AgenticEvaluationView from "../components/AgenticEvaluationView";
+import AppBreadcrumbs from "../components/AppBreadcrumbs";
 import ScoreBar from "../components/ScoreBar";
 import SimpleMarkdown from "../components/SimpleMarkdown";
 import PageLoader from "../components/PageLoader";
@@ -331,6 +333,17 @@ export default function EvaluationDetail() {
   // --- Completed state ---
   return (
     <Box sx={{ maxWidth: 900, mx: "auto" }}>
+      <AppBreadcrumbs
+        crumbs={[
+          { label: "Dashboard", path: "/" },
+          {
+            label: evaluation.evaluation_type === "agentic"
+              ? "Agentic Evaluation"
+              : "Evaluation Results",
+          },
+        ]}
+      />
+
       {/* Header */}
       <Stack
         direction={{ xs: "column", sm: "row" }}
@@ -473,6 +486,56 @@ export default function EvaluationDetail() {
           )}
         </Stack>
       </Stack>
+
+      {/* Question context — links back to source question */}
+      {evaluation.question_text && (
+        <Card variant="outlined" sx={{ mb: 3 }}>
+          <CardContent sx={{ py: 1.5, "&:last-child": { pb: 1.5 } }}>
+            <Stack direction="row" alignItems="flex-start" spacing={1.5}>
+              <QuizIcon color="primary" sx={{ mt: 0.25, flexShrink: 0 }} />
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                  Question
+                </Typography>
+                <Typography variant="body1" sx={{ mb: 1 }}>
+                  {evaluation.question_text}
+                </Typography>
+                <Stack direction="row" spacing={1}>
+                  {evaluation.question_id && (
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() =>
+                        navigate("/questions", {
+                          state: { highlightId: evaluation.question_id },
+                        })
+                      }
+                    >
+                      View in Question Bank
+                    </Button>
+                  )}
+                  {evaluation.question_id && (
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() =>
+                        navigate("/mock", {
+                          state: {
+                            questionId: evaluation.question_id,
+                            questionText: evaluation.question_text,
+                          },
+                        })
+                      }
+                    >
+                      Practice Again
+                    </Button>
+                  )}
+                </Stack>
+              </Box>
+            </Stack>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Revision Editor — collapsible panel */}
       <Collapse in={revising}>

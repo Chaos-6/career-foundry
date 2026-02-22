@@ -10,6 +10,7 @@ from app.models.models import (
     MockSession,
     Question,
     User,
+    UserBookmark,
 )
 
 __all__ = [
@@ -22,4 +23,5 @@ __all__ = [
     "Evaluation",
     "MockSession",
     "CoachingRelationship",
+    "UserBookmark",
 ]

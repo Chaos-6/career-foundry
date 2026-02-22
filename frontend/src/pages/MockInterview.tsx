@@ -23,17 +23,21 @@ import {
   CardContent,
   CircularProgress,
   FormControl,
+  IconButton,
   InputLabel,
   LinearProgress,
   MenuItem,
   Select,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import TimerIcon from "@mui/icons-material/Timer";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import SendIcon from "@mui/icons-material/Send";
+import VolumeUpIcon from "@mui/icons-material/VolumeUp";
+import VolumeOffIcon from "@mui/icons-material/VolumeOff";
 
 import {
   listCompanies,
@@ -91,6 +95,41 @@ export default function MockInterview() {
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const [audioMuted, setAudioMuted] = useState(false);
+
+  /** Play a beep via Web Audio API — zero dependencies, works in all browsers. */
+  const playBeep = useCallback(
+    (frequency: number, durationMs = 120) => {
+      if (audioMuted) return;
+      try {
+        if (!audioCtxRef.current) {
+          audioCtxRef.current = new AudioContext();
+        }
+        const ctx = audioCtxRef.current;
+        if (ctx.state === "suspended") ctx.resume();
+
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.frequency.value = frequency;
+        osc.type = "sine";
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(
+          0.001,
+          ctx.currentTime + durationMs / 1000
+        );
+
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + durationMs / 1000);
+      } catch {
+        // Audio not supported — silently degrade
+      }
+    },
+    [audioMuted]
+  );
 
   const { data: companies } = useQuery({
     queryKey: ["companies"],
@@ -118,6 +157,15 @@ export default function MockInterview() {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [phase]);
+
+  // Audio alerts at key time thresholds
+  useEffect(() => {
+    if (phase !== "active") return;
+    if (secondsLeft === 60) playBeep(440);        // 1min — gentle reminder
+    else if (secondsLeft === 30) playBeep(660);    // 30s — urgent
+    else if (secondsLeft === 10) playBeep(880);    // 10s — alarming
+    else if (secondsLeft <= 5 && secondsLeft > 0) playBeep(880, 80); // final countdown
+  }, [secondsLeft, phase, playBeep]);
 
   const handleStart = async () => {
     setError("");
@@ -231,6 +279,20 @@ export default function MockInterview() {
       handleSubmit();
     }
   }, [secondsLeft, phase, answerText, handleSubmit]);
+
+  // Keyboard shortcuts: Ctrl+Enter to submit
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        if (phase === "active" && answerText.trim().length >= 10) {
+          e.preventDefault();
+          handleSubmit();
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [phase, answerText, handleSubmit]);
 
   // Format seconds as MM:SS
   const formatTime = (s: number) => {
@@ -378,6 +440,15 @@ export default function MockInterview() {
             >
               {formatTime(secondsLeft)}
             </Typography>
+            <Tooltip title={audioMuted ? "Unmute alerts" : "Mute alerts"}>
+              <IconButton
+                size="small"
+                onClick={() => setAudioMuted(!audioMuted)}
+                color={audioMuted ? "default" : "primary"}
+              >
+                {audioMuted ? <VolumeOffIcon /> : <VolumeUpIcon />}
+              </IconButton>
+            </Tooltip>
             <Typography
               variant="body2"
               color="text.secondary"
@@ -438,21 +509,34 @@ export default function MockInterview() {
           {wordCount} words
         </Typography>
         <Box sx={{ flexGrow: 1 }} />
-        <Button
-          variant="contained"
-          endIcon={
-            phase === "submitting" ? (
-              <CircularProgress size={20} color="inherit" />
-            ) : (
-              <SendIcon />
-            )
-          }
-          onClick={handleSubmit}
-          disabled={phase === "submitting" || answerText.trim().length < 10}
-        >
-          {phase === "submitting" ? "Submitting..." : "Submit & Evaluate"}
-        </Button>
+        <Tooltip title="Ctrl+Enter to submit">
+          <span>
+            <Button
+              variant="contained"
+              endIcon={
+                phase === "submitting" ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : (
+                  <SendIcon />
+                )
+              }
+              onClick={handleSubmit}
+              disabled={phase === "submitting" || answerText.trim().length < 10}
+            >
+              {phase === "submitting" ? "Submitting..." : "Submit & Evaluate"}
+            </Button>
+          </span>
+        </Tooltip>
       </Box>
+
+      {/* Shortcut hints */}
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ mt: 1, display: "block", textAlign: "right" }}
+      >
+        Ctrl+Enter to submit
+      </Typography>
 
       {/* Upgrade prompt when tier limit is reached */}
       <UpgradePrompt

@@ -54,6 +54,7 @@ import SchoolIcon from "@mui/icons-material/School";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
+import DownloadIcon from "@mui/icons-material/Download";
 import {
   AreaChart,
   Area,
@@ -78,6 +79,7 @@ import {
   RecommendedQuestion,
   ScoreDataPoint,
 } from "../api/client";
+import { downloadCsv } from "../utils/csv";
 
 // ---------------------------------------------------------------------------
 // Static data
@@ -481,12 +483,39 @@ function AuthenticatedDashboard() {
       {(recentLoading || (recent && recent.length > 0)) && (
         <Card sx={{ mb: 3 }}>
           <CardContent>
-            <Typography variant="h6" gutterBottom fontWeight={600}>
-              <HistoryIcon
-                sx={{ mr: 1, verticalAlign: "middle", fontSize: 22 }}
-              />
-              Recent Evaluations
-            </Typography>
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+              sx={{ mb: 1 }}
+            >
+              <Typography variant="h6" fontWeight={600}>
+                <HistoryIcon
+                  sx={{ mr: 1, verticalAlign: "middle", fontSize: 22 }}
+                />
+                Recent Evaluations
+              </Typography>
+              {recent && recent.length > 0 && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<DownloadIcon />}
+                  onClick={() => {
+                    const rows = recent.map((ev) => ({
+                      date: new Date(ev.created_at).toLocaleDateString(),
+                      question: ev.question_text || "Custom question",
+                      company: ev.company_name || "",
+                      role: ev.target_role || "",
+                      average_score: ev.average_score ?? "",
+                      status: ev.status,
+                    }));
+                    downloadCsv(rows, `career-foundry-evaluations-${new Date().toISOString().split("T")[0]}.csv`);
+                  }}
+                >
+                  Export CSV
+                </Button>
+              )}
+            </Stack>
             {recentLoading ? (
               <Stack spacing={1}>
                 {[1, 2, 3].map((i) => (

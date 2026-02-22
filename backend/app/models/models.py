@@ -1,7 +1,7 @@
 """
 SQLAlchemy models for the Behavioral Interview Answer Evaluator.
 
-9 tables:
+10 tables:
 1. CompanyProfile        — 22+ companies with guiding principles (JSONB)
 2. Question              — 100+ behavioral questions tagged by role/competency/difficulty
 3. User                  — Accounts with auth and preferences
@@ -11,6 +11,7 @@ SQLAlchemy models for the Behavioral Interview Answer Evaluator.
 7. MockSession           — Timed practice session metadata
 8. AnswerTemplate        — Reusable STAR answer frameworks per user
 9. CoachingRelationship  — Student↔coach links with invite workflow
+10. UserBookmark         — User's saved/favorited questions
 
 Key patterns:
 - UUID primary keys everywhere
@@ -419,3 +420,40 @@ class CoachingRelationship(Base):
     # Relationships
     coach = relationship("User", foreign_keys=[coach_id])
     student = relationship("User", foreign_keys=[student_id])
+
+
+# ---------------------------------------------------------------------------
+# Question Bookmarks (User Favorites)
+# ---------------------------------------------------------------------------
+
+class UserBookmark(Base):
+    """A user's bookmarked/saved question for quick access.
+
+    Simple many-to-many relationship between users and questions.
+    The unique constraint prevents duplicate bookmarks.
+    """
+
+    __tablename__ = "user_bookmarks"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    question_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("questions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "question_id", name="uq_user_question_bookmark"),
+    )
+
+    # Relationships
+    user = relationship("User")
+    question = relationship("Question")
