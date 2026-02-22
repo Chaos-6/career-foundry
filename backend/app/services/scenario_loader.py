@@ -89,14 +89,20 @@ def get_random_scenario(
     return random.choice(candidates) if candidates else None
 
 
-def get_categories(track: str = "agentic") -> list[str]:
-    """Get distinct category names for a track.
+def get_categories(
+    track: str = "agentic",
+    interview_type: Optional[str] = None,
+) -> list[str]:
+    """Get distinct category names for a track (and optionally type).
 
     Useful for populating filter dropdowns on the frontend.
+    When interview_type is provided, only returns categories that
+    have at least one scenario of that type — prevents dead-end filters.
     """
-    return sorted(
-        {s["category"] for s in _ALL_SCENARIOS if s.get("track") == track}
-    )
+    filtered = [s for s in _ALL_SCENARIOS if s.get("track") == track]
+    if interview_type:
+        filtered = [s for s in filtered if s.get("type") == interview_type]
+    return sorted({s["category"] for s in filtered})
 
 
 def get_scenario_by_id(scenario_id: str) -> Optional[dict]:

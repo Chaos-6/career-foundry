@@ -93,9 +93,16 @@ async def random_scenario(
 
 
 @router.get("/categories", response_model=list[str])
-async def list_categories(track: str = "agentic"):
-    """Get available scenario categories for a track."""
-    return get_categories(track=track)
+async def list_categories(
+    track: str = "agentic",
+    interview_type: Optional[str] = None,
+):
+    """Get available scenario categories for a track.
+
+    When interview_type is provided, only returns categories that have
+    at least one scenario of that type — prevents showing empty filters.
+    """
+    return get_categories(track=track, interview_type=interview_type)
 
 
 @router.get("/{scenario_id}", response_model=ScenarioResponse)

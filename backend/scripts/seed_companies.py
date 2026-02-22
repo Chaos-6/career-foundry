@@ -1,5 +1,5 @@
 """
-Seed the company_profiles table with 22+ tier 1 tech companies.
+Seed the company_profiles table with 43 tech companies.
 
 Each company includes:
 - Guiding principles (Leadership Principles, Core Values, etc.)
@@ -455,6 +455,409 @@ COMPANIES = [
             "Empathy for underserved users is key — demonstrate inclusive thinking",
             "Show transparency and openness in your communication",
             "Demonstrate collaborative problem-solving across teams",
+        ],
+    },
+
+    # -----------------------------------------------------------------------
+    # AI / ML Companies
+    # -----------------------------------------------------------------------
+    {
+        "name": "Hugging Face",
+        "slug": "hugging-face",
+        "principle_type": "Core Values",
+        "principles": [
+            {"name": "Open Source First", "description": "We believe AI should be open and accessible. We build in the open and contribute to the community."},
+            {"name": "Community-Driven", "description": "Our community shapes our roadmap. We listen to researchers, developers, and users and build what they need."},
+            {"name": "Democratize AI", "description": "We make state-of-the-art AI accessible to everyone, not just large corporations with massive compute budgets."},
+            {"name": "Ethics and Responsibility", "description": "We take AI safety and ethics seriously, building tools for responsible AI development."},
+            {"name": "Collaboration", "description": "We believe the best AI is built together. We foster collaboration across the global ML community."},
+        ],
+        "interview_focus": "Show passion for open-source AI, community building, and making ML accessible. Demonstrate strong technical depth in NLP/ML.",
+        "interview_tips": [
+            "Hugging Face values open-source contributions — mention your OSS work",
+            "Show how you've made complex AI concepts accessible to others",
+            "Demonstrate community engagement and collaborative development",
+            "Technical depth in transformers, NLP, or ML infrastructure is valued",
+            "Show you care about responsible AI and ethics",
+        ],
+    },
+    {
+        "name": "Cohere",
+        "slug": "cohere",
+        "principle_type": "Core Values",
+        "principles": [
+            {"name": "Ship with Purpose", "description": "We build AI that solves real enterprise problems. Every feature should drive customer value."},
+            {"name": "Rigor and Excellence", "description": "We hold ourselves to the highest standards in research and engineering. Quality is non-negotiable."},
+            {"name": "Customer Partnership", "description": "We work alongside our customers, understanding their needs deeply and building solutions together."},
+            {"name": "Transparency", "description": "We communicate openly about what our models can and cannot do. We set honest expectations."},
+            {"name": "Move Decisively", "description": "The AI landscape moves fast. We make decisions quickly, learn from outcomes, and iterate."},
+        ],
+        "interview_focus": "Demonstrate enterprise AI experience, rigorous ML engineering, and customer-centric product thinking. Show you can balance research ambition with shipping.",
+        "interview_tips": [
+            "Cohere focuses on enterprise NLP — show production ML experience",
+            "Demonstrate understanding of LLM deployment challenges at scale",
+            "Customer partnership is key — show how you've worked with enterprise clients",
+            "Balance research depth with practical engineering pragmatism",
+        ],
+    },
+    {
+        "name": "Scale AI",
+        "slug": "scale-ai",
+        "principle_type": "Operating Principles",
+        "principles": [
+            {"name": "Data Quality Obsession", "description": "Great AI starts with great data. We obsess over data quality, labeling accuracy, and annotation consistency."},
+            {"name": "Mission-Driven", "description": "We accelerate the development of AI applications. Every decision should advance AI adoption."},
+            {"name": "Move Fast and Ship", "description": "Speed is a competitive advantage. We ship rapidly, measure outcomes, and iterate."},
+            {"name": "Customer First", "description": "Our customers build the future of AI. We succeed when they succeed."},
+            {"name": "High Standards", "description": "We hire exceptional people and hold everyone to exceptional standards. Mediocrity is not tolerated."},
+        ],
+        "interview_focus": "Show intensity, high standards, and passion for AI infrastructure. Demonstrate experience with data quality at scale and fast execution.",
+        "interview_tips": [
+            "Scale AI values intensity and high performance — show you operate at a high bar",
+            "Demonstrate understanding of data pipelines, labeling, and quality at scale",
+            "Show how you've shipped quickly while maintaining quality",
+            "Mission-driven culture — connect your work to advancing AI",
+            "Be prepared for rigorous technical evaluations",
+        ],
+    },
+    {
+        "name": "Midjourney",
+        "slug": "midjourney",
+        "principle_type": "Creative Principles",
+        "principles": [
+            {"name": "Imagination First", "description": "We build tools that expand human imagination. Technology serves creativity, not the other way around."},
+            {"name": "Craft and Quality", "description": "We care deeply about the quality and beauty of what we create. Details matter."},
+            {"name": "Small Team, Big Impact", "description": "We stay lean and focused. Every person has outsized impact and ownership."},
+            {"name": "User Delight", "description": "We aim to surprise and delight users. The experience should feel magical, not mechanical."},
+        ],
+        "interview_focus": "Show creative thinking alongside technical depth. Demonstrate passion for generative AI and user experience. Emphasize doing more with less.",
+        "interview_tips": [
+            "Midjourney is a very small team — show you can wear many hats",
+            "Demonstrate passion for the intersection of AI and creativity",
+            "Quality and craft matter — show attention to detail in your work",
+            "User experience focus is paramount — think about delight, not just functionality",
+        ],
+    },
+    {
+        "name": "Stability AI",
+        "slug": "stability-ai",
+        "principle_type": "Core Values",
+        "principles": [
+            {"name": "Open AI for Everyone", "description": "We believe AI models should be open and accessible, enabling innovation across the world."},
+            {"name": "Community Empowerment", "description": "We empower communities of developers, artists, and researchers to build on our models."},
+            {"name": "Responsible Development", "description": "We develop AI responsibly, considering societal impact and working to mitigate harms."},
+            {"name": "Innovation at the Frontier", "description": "We push the boundaries of generative AI, exploring new architectures and applications."},
+            {"name": "Transparency", "description": "We publish our research, share our models, and communicate openly about our work."},
+        ],
+        "interview_focus": "Show commitment to open-source AI, generative model expertise, and responsible development. Demonstrate frontier research or engineering capabilities.",
+        "interview_tips": [
+            "Stability AI values open-source commitment — show your OSS contributions",
+            "Demonstrate deep knowledge of diffusion models or generative AI",
+            "Show awareness of responsible AI practices and societal impact",
+            "Community building and collaboration are valued",
+        ],
+    },
+
+    # -----------------------------------------------------------------------
+    # Fintech
+    # -----------------------------------------------------------------------
+    {
+        "name": "PayPal",
+        "slug": "paypal",
+        "principle_type": "Core Values",
+        "principles": [
+            {"name": "Inclusion", "description": "We build products that serve everyone. Financial services should be accessible regardless of background."},
+            {"name": "Innovation", "description": "We continuously innovate to simplify commerce and make money management easier for everyone."},
+            {"name": "Collaboration", "description": "We work across teams and geographies to deliver seamless financial experiences."},
+            {"name": "Wellness", "description": "We care about our employees and communities. Healthy teams build better products."},
+            {"name": "Customer Champion", "description": "We put customers at the center of everything. Their trust is our most important asset."},
+        ],
+        "interview_focus": "Demonstrate experience with payments, security, or large-scale financial systems. Show customer empathy and inclusion mindset.",
+        "interview_tips": [
+            "PayPal values financial inclusion — show how your work helps underserved populations",
+            "Security and trust are paramount in fintech — demonstrate risk awareness",
+            "Show experience with high-throughput, low-latency systems",
+            "Collaboration across global teams is important — show cross-cultural teamwork",
+        ],
+    },
+    {
+        "name": "Revolut",
+        "slug": "revolut",
+        "principle_type": "Cultural Principles",
+        "principles": [
+            {"name": "Think Deeper", "description": "We question assumptions and dig into the details. Surface-level analysis is not enough."},
+            {"name": "Deliver Wow", "description": "We aim to deliver experiences that make customers say 'wow.' Good enough is never enough."},
+            {"name": "Get It Done", "description": "We are relentless in execution. We set ambitious targets and find ways to hit them."},
+            {"name": "Dream Team", "description": "We hire the best and expect the best. High performers thrive here."},
+            {"name": "Never Settle", "description": "We are never satisfied. There is always a way to improve the product, the process, or ourselves."},
+        ],
+        "interview_focus": "Show extreme ownership, high performance, and customer obsession. Demonstrate ability to work at very high velocity.",
+        "interview_tips": [
+            "Revolut has an intense, high-performance culture — show drive and resilience",
+            "Quantify everything — metrics-driven thinking is essential",
+            "Show you can deliver under pressure and tight deadlines",
+            "Customer experience obsession is key — show product thinking",
+            "Be prepared for very rigorous, multi-round interviews",
+        ],
+    },
+    {
+        "name": "Plaid",
+        "slug": "plaid",
+        "principle_type": "Core Values",
+        "principles": [
+            {"name": "Start with Why", "description": "We understand why before we build what. Every project starts with a clear problem statement."},
+            {"name": "Build Together", "description": "We build great products through cross-functional collaboration and shared ownership."},
+            {"name": "Iterate and Learn", "description": "We ship, measure, learn, and iterate. We're comfortable with uncertainty and rapid change."},
+            {"name": "Win for Developers", "description": "Our customers are developers. We build APIs they love and documentation they can actually use."},
+            {"name": "Act with Integrity", "description": "We handle financial data responsibly. Trust is foundational to everything we do."},
+        ],
+        "interview_focus": "Demonstrate API design expertise, developer empathy, and financial data responsibility. Show iterative product development skills.",
+        "interview_tips": [
+            "Plaid is developer-focused — show experience building APIs or developer tools",
+            "Financial data security and compliance awareness is important",
+            "Show how you've iterated on products based on developer feedback",
+            "Cross-functional collaboration is valued — show teamwork examples",
+        ],
+    },
+    {
+        "name": "Affirm",
+        "slug": "affirm",
+        "principle_type": "Core Values",
+        "principles": [
+            {"name": "People Come First", "description": "We put people before profits. Our products are designed to help, not exploit, consumers."},
+            {"name": "No Fine Print", "description": "We are radically transparent. No hidden fees, no gotchas, no confusing terms."},
+            {"name": "It's On Us", "description": "We take responsibility. When something goes wrong, we own it and fix it."},
+            {"name": "Simplify", "description": "We make complex financial concepts simple and accessible to everyone."},
+            {"name": "Endure", "description": "We build for the long term. Short-term hacks are not acceptable when they compromise trust."},
+        ],
+        "interview_focus": "Show commitment to ethical financial products, consumer advocacy, and transparency. Demonstrate long-term thinking over short-term gains.",
+        "interview_tips": [
+            "Affirm deeply values honesty and transparency — show ethical decision-making",
+            "Consumer financial health focus — demonstrate empathy for borrowers",
+            "Show how you've simplified complex systems or concepts",
+            "Long-term thinking matters — avoid examples of cutting corners",
+        ],
+    },
+    {
+        "name": "Robinhood",
+        "slug": "robinhood",
+        "principle_type": "Core Values",
+        "principles": [
+            {"name": "Democratize Finance", "description": "We make financial markets accessible to everyone, not just the wealthy."},
+            {"name": "Customer First", "description": "Every decision should improve the experience for our customers."},
+            {"name": "Radical Transparency", "description": "We communicate openly with customers, regulators, and each other."},
+            {"name": "Pioneering Spirit", "description": "We challenge the status quo and aren't afraid to try new approaches."},
+            {"name": "Responsible Growth", "description": "We grow thoughtfully, ensuring our platform is safe and reliable."},
+        ],
+        "interview_focus": "Demonstrate passion for financial democratization, consumer-first product thinking, and building reliable financial infrastructure.",
+        "interview_tips": [
+            "Robinhood's mission is financial democratization — connect your work to broadening access",
+            "Reliability and trust are critical — show experience with high-uptime systems",
+            "Show product intuition for consumer-facing financial features",
+            "Be prepared to discuss regulatory awareness and compliance",
+        ],
+    },
+
+    # -----------------------------------------------------------------------
+    # Big Tech / Hardware / Semiconductor
+    # -----------------------------------------------------------------------
+    {
+        "name": "Samsung",
+        "slug": "samsung",
+        "principle_type": "Core Values",
+        "principles": [
+            {"name": "People", "description": "We value our people and dedicate ourselves to giving them a wealth of opportunities."},
+            {"name": "Excellence", "description": "We dedicate ourselves to making the best products and services through relentless pursuit of quality."},
+            {"name": "Change", "description": "We embrace change and drive innovation. Standing still is falling behind."},
+            {"name": "Integrity", "description": "We operate ethically, with transparency and fairness in all business dealings."},
+            {"name": "Co-Prosperity", "description": "We pursue mutual growth with our partners, communities, and the world at large."},
+        ],
+        "interview_focus": "Show hardware-software integration expertise, global mindset, and relentless quality focus. Demonstrate innovation in consumer electronics or semiconductor domains.",
+        "interview_tips": [
+            "Samsung values quality obsession — show rigorous testing and engineering discipline",
+            "Global company — demonstrate cross-cultural communication skills",
+            "Innovation in hardware-software integration is highly valued",
+            "Show how you've driven change or adopted new technologies",
+        ],
+    },
+    {
+        "name": "Intel",
+        "slug": "intel",
+        "principle_type": "Core Values",
+        "principles": [
+            {"name": "Customer First", "description": "We listen to and learn from our customers. Their success is our success."},
+            {"name": "Fearless Innovation", "description": "We push boundaries and embrace bold ideas. Innovation requires courage."},
+            {"name": "Inclusion", "description": "We value diverse perspectives. The best solutions come from diverse teams."},
+            {"name": "Quality", "description": "We set and achieve the highest standards of excellence in everything we do."},
+            {"name": "One Intel", "description": "We work as one team, collaborating across boundaries to achieve shared goals."},
+            {"name": "Results Orientation", "description": "We focus on outcomes, not just activity. Execution matters."},
+        ],
+        "interview_focus": "Demonstrate deep technical expertise in hardware, silicon, or systems engineering. Show innovation mindset and collaborative problem-solving.",
+        "interview_tips": [
+            "Intel values deep technical expertise — be ready for detailed technical discussions",
+            "Show innovation in hardware, systems, or architecture domains",
+            "Cross-team collaboration is important — show 'One Intel' mindset",
+            "Results-oriented — quantify impact of your work",
+        ],
+    },
+    {
+        "name": "Qualcomm",
+        "slug": "qualcomm",
+        "principle_type": "Core Values",
+        "principles": [
+            {"name": "Innovation", "description": "We pioneer breakthrough technologies that transform how the world connects, computes, and communicates."},
+            {"name": "Execution", "description": "Great ideas need great execution. We deliver reliably and efficiently."},
+            {"name": "Partnership", "description": "We work closely with our ecosystem partners to create solutions greater than any of us could build alone."},
+            {"name": "Integrity", "description": "We conduct business with the highest ethical standards and respect for intellectual property."},
+            {"name": "Quality", "description": "We build products that work reliably in the most demanding environments — from phones to cars to IoT."},
+        ],
+        "interview_focus": "Show wireless/mobile technology expertise, strong execution skills, and ecosystem partnership thinking. Demonstrate experience shipping at scale.",
+        "interview_tips": [
+            "Qualcomm values deep wireless/mobile/embedded expertise",
+            "Show experience with shipping products that serve billions of devices",
+            "Partnership ecosystem thinking is valued — show cross-company collaboration",
+            "IP and innovation focus — demonstrate original thinking and invention",
+        ],
+    },
+    {
+        "name": "AMD",
+        "slug": "amd",
+        "principle_type": "Core Values",
+        "principles": [
+            {"name": "Innovation", "description": "We design high-performance computing and graphics solutions that push the boundaries of what's possible."},
+            {"name": "Passion", "description": "We are passionate about our technology, our customers, and making a difference in people's lives."},
+            {"name": "Integrity", "description": "We are honest, ethical, and committed to doing the right thing."},
+            {"name": "Accountability", "description": "We take responsibility for our commitments and deliver on our promises."},
+            {"name": "One AMD", "description": "We collaborate as one global team, leveraging diverse perspectives to achieve shared goals."},
+        ],
+        "interview_focus": "Demonstrate high-performance computing expertise, competitive engineering mindset, and collaborative team spirit. Show passion for pushing performance boundaries.",
+        "interview_tips": [
+            "AMD values competitive engineering drive — show how you've outperformed alternatives",
+            "High-performance computing expertise is critical — CPU, GPU, or systems-level",
+            "Show passion for technology and performance optimization",
+            "Accountability matters — demonstrate owning commitments and delivering",
+        ],
+    },
+
+    # -----------------------------------------------------------------------
+    # Cloud / Developer Tools
+    # -----------------------------------------------------------------------
+    {
+        "name": "Cloudflare",
+        "slug": "cloudflare",
+        "principle_type": "Core Values",
+        "principles": [
+            {"name": "Build a Better Internet", "description": "Our mission is to help build a better internet. Every product should make the internet faster, safer, and more reliable."},
+            {"name": "Curiosity", "description": "We are endlessly curious about how the internet works and how we can improve it."},
+            {"name": "Transparency", "description": "We share what we learn, publish our research, and communicate openly with our users."},
+            {"name": "Empathy", "description": "We care about our customers and each other. We build products that work for everyone, from small blogs to Fortune 500 companies."},
+            {"name": "Bias for Action", "description": "We move quickly to protect and serve our customers. Security threats don't wait, and neither do we."},
+        ],
+        "interview_focus": "Show passion for internet infrastructure, security, and performance. Demonstrate systems-level thinking and ability to operate at massive scale.",
+        "interview_tips": [
+            "Cloudflare handles a significant portion of internet traffic — show scale experience",
+            "Security mindset is essential — demonstrate threat awareness and defensive thinking",
+            "Systems-level engineering is valued — show deep networking or infrastructure knowledge",
+            "Transparency is cultural — Cloudflare blogs extensively, show your communication skills",
+        ],
+    },
+    {
+        "name": "Vercel",
+        "slug": "vercel",
+        "principle_type": "Core Values",
+        "principles": [
+            {"name": "Developer Experience", "description": "We obsess over developer experience. If it's hard to use, we haven't finished building it."},
+            {"name": "Ship Early, Ship Often", "description": "We believe in incremental delivery. Small, frequent deploys beat big-bang releases."},
+            {"name": "Performance by Default", "description": "Performance shouldn't require configuration. Our products are fast out of the box."},
+            {"name": "Open Source", "description": "We build on and contribute to open source. Next.js is our gift to the web community."},
+        ],
+        "interview_focus": "Demonstrate frontend/fullstack expertise, developer tooling passion, and obsession with performance. Show experience with modern web frameworks.",
+        "interview_tips": [
+            "Vercel is the company behind Next.js — deep React/Next.js knowledge is expected",
+            "Developer experience obsession is core — show how you've simplified complex workflows",
+            "Performance optimization is valued — demonstrate web performance expertise",
+            "Open-source contributions and community engagement are strong signals",
+        ],
+    },
+    {
+        "name": "Netlify",
+        "slug": "netlify",
+        "principle_type": "Core Values",
+        "principles": [
+            {"name": "Empower Web Developers", "description": "We make web development simpler, faster, and more enjoyable for developers everywhere."},
+            {"name": "Open Web Standards", "description": "We champion the open web and build on standards that benefit the entire ecosystem."},
+            {"name": "Composable Architecture", "description": "We believe in modular, composable approaches to web development over monolithic frameworks."},
+            {"name": "Remote-First Culture", "description": "We are remote-first by design, building a culture of trust, autonomy, and asynchronous communication."},
+        ],
+        "interview_focus": "Show passion for web development, JAMstack architecture, and developer experience. Demonstrate comfort with remote-first work culture.",
+        "interview_tips": [
+            "Netlify pioneered the JAMstack — show knowledge of modern web architecture",
+            "Developer experience and simplicity are paramount",
+            "Remote-first culture — demonstrate async communication and self-direction",
+            "Open web standards and composable architecture knowledge is valued",
+        ],
+    },
+    {
+        "name": "Supabase",
+        "slug": "supabase",
+        "principle_type": "Core Values",
+        "principles": [
+            {"name": "Open Source", "description": "We are open source to the core. Our products are built on and contribute to PostgreSQL and the open-source ecosystem."},
+            {"name": "Developer Love", "description": "We build tools that developers love to use. Great DX is our competitive advantage."},
+            {"name": "Ship Fast", "description": "We ship features fast, gather feedback, and iterate. Launch weeks are a Supabase tradition."},
+            {"name": "Transparency", "description": "We build in public, share our metrics, and communicate openly with our community."},
+            {"name": "PostgreSQL First", "description": "We bet on PostgreSQL. We don't abstract it away — we make it more accessible."},
+        ],
+        "interview_focus": "Demonstrate PostgreSQL expertise, open-source passion, and developer-first product thinking. Show ability to ship fast and iterate.",
+        "interview_tips": [
+            "Supabase is built on PostgreSQL — deep database knowledge is valued",
+            "Open-source contributions are a strong signal",
+            "Show you can ship quickly — Supabase has a culture of rapid iteration",
+            "Developer experience focus — show how you've built tools developers love",
+            "Building in public and transparency are cultural values",
+        ],
+    },
+
+    # -----------------------------------------------------------------------
+    # Enterprise / SaaS
+    # -----------------------------------------------------------------------
+    {
+        "name": "Twilio",
+        "slug": "twilio",
+        "principle_type": "Core Values",
+        "principles": [
+            {"name": "Write It Down", "description": "We document our thinking. Written proposals drive clarity and better decisions."},
+            {"name": "Be an Owner", "description": "We act like owners, not renters. We take responsibility for outcomes, not just tasks."},
+            {"name": "Empower Others", "description": "We build APIs that empower millions of developers to build communication experiences."},
+            {"name": "Don't Settle", "description": "We set high standards and continuously raise the bar. Good enough is never enough."},
+            {"name": "Be Bold", "description": "We take calculated risks and pursue ambitious goals. Playing it safe limits our impact."},
+        ],
+        "interview_focus": "Show API design expertise, developer empathy, and strong written communication. Demonstrate ownership mentality and technical depth.",
+        "interview_tips": [
+            "Twilio values strong written communication — 'Write It Down' is a real practice",
+            "API and developer platform experience is highly relevant",
+            "Show ownership of outcomes, not just individual contributions",
+            "Demonstrate how you've empowered other developers through your work",
+        ],
+    },
+    {
+        "name": "Atlassian",
+        "slug": "atlassian",
+        "principle_type": "Core Values",
+        "principles": [
+            {"name": "Open Company, No Bullshit", "description": "We share information openly and communicate honestly, even when it's uncomfortable."},
+            {"name": "Build with Heart and Balance", "description": "We bring passion to our work and care about sustainable, balanced effort."},
+            {"name": "Don't #@!% the Customer", "description": "We put customers first and never ship something we know will hurt their experience."},
+            {"name": "Play, as a Team", "description": "We collaborate joyfully, celebrate wins together, and have fun building great products."},
+            {"name": "Be the Change You Seek", "description": "We take initiative and drive improvement. We don't wait for someone else to fix things."},
+        ],
+        "interview_focus": "Show customer-first mindset, collaborative team spirit, and transparent communication. Demonstrate values alignment with openness and integrity.",
+        "interview_tips": [
+            "Atlassian values radical honesty — 'Open Company, No Bullshit' is a real value",
+            "Customer obsession is critical — show how you've protected user experience",
+            "Team collaboration and joyful work culture are important signals",
+            "Show initiative and proactive problem-solving — don't wait to be told",
+            "Atlassian has a strong values interview — prepare values-aligned stories",
         ],
     },
 

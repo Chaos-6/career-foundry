@@ -513,5 +513,362 @@
       "Proactive surfacing: triggers and relevance scoring",
       "Privacy: user control over memory, deletion, export"
     ]
+  },
+
+  {
+    "id": "sys_design_safety_01",
+    "track": "agentic",
+    "type": "system_design",
+    "role": "AGENTIC_ENGINEER",
+    "category": "safety_alignment",
+    "difficulty": "expert",
+    "question": "Design a safety layer for a multi-tenant agentic platform — a system that enforces per-tenant safety policies, detects prompt injection across shared infrastructure, and prevents cross-tenant data leakage. The platform hosts 500+ customer agents on shared GPU infrastructure.",
+    "tags": ["multi_tenant", "safety", "isolation", "prompt_injection", "data_leakage"],
+    "ideal_answer_points": [
+      "Tenant isolation at inference level (separate system prompts, context boundaries)",
+      "Prompt injection detection pipeline (classifier + heuristics)",
+      "Cross-tenant data leakage prevention (embedding isolation, cache partitioning)",
+      "Per-tenant safety policy configuration (allow/deny lists, content filters)",
+      "Audit logging and incident response automation",
+      "Performance impact of safety layer on latency budget"
+    ]
+  },
+  {
+    "id": "sys_design_safety_02",
+    "track": "agentic",
+    "type": "system_design",
+    "role": "AGENTIC_ENGINEER",
+    "category": "safety_alignment",
+    "difficulty": "hard",
+    "question": "Design an automated red-teaming system that continuously probes a production agent for safety vulnerabilities — prompt injection, jailbreaks, PII leakage, and harmful outputs. It should run in CI/CD and generate actionable reports.",
+    "tags": ["red_teaming", "automated_testing", "safety", "ci_cd", "vulnerability"],
+    "ideal_answer_points": [
+      "Attack taxonomy and scenario generation (template-based + LLM-generated)",
+      "Test harness with sandboxed agent execution",
+      "Detection criteria for each vulnerability class",
+      "Integration into CI/CD pipeline (blocking vs reporting)",
+      "Report generation with severity classification and reproduction steps",
+      "Feedback loop: new attacks discovered in prod feed back into test suite"
+    ]
+  },
+  {
+    "id": "sys_design_safety_03",
+    "track": "agentic",
+    "type": "system_design",
+    "role": "AGENTIC_ENGINEER",
+    "category": "safety_alignment",
+    "difficulty": "hard",
+    "question": "Design a PII detection and redaction pipeline for a customer support agent that processes 10,000 conversations per day. It must catch PII in both user inputs and agent outputs, support 12 languages, and have <1% false negative rate.",
+    "tags": ["pii", "redaction", "multilingual", "compliance", "pipeline"],
+    "ideal_answer_points": [
+      "Multi-stage pipeline: regex → NER model → LLM verification",
+      "PII taxonomy (SSN, credit card, email, phone, address, medical, etc.)",
+      "Multilingual NER model selection and training data",
+      "Stream processing architecture for real-time redaction",
+      "False negative measurement and human-in-the-loop review",
+      "Compliance reporting and audit trail"
+    ]
+  },
+  {
+    "id": "sys_design_ops_01",
+    "track": "agentic",
+    "type": "system_design",
+    "role": "AGENTIC_ENGINEER",
+    "category": "production_operations",
+    "difficulty": "expert",
+    "question": "Design an observability platform purpose-built for agentic systems — it must trace multi-step agent reasoning, visualize tool call chains, alert on behavioral anomalies, and support debugging of 'why did the agent do that?' questions across 1M+ daily agent runs.",
+    "tags": ["observability", "tracing", "debugging", "scale", "anomaly_detection"],
+    "ideal_answer_points": [
+      "Trace schema: spans for each agent step (planning, tool call, generation)",
+      "Storage architecture for high-cardinality trace data at scale",
+      "Visualization: DAG of agent reasoning with branching and backtracking",
+      "Anomaly detection: statistical baselines for tool call patterns, latency, token usage",
+      "Query interface for 'why did the agent do X?' investigations",
+      "Cost-effective retention (hot/warm/cold tiers, sampling)"
+    ]
+  },
+  {
+    "id": "sys_design_ops_02",
+    "track": "agentic",
+    "type": "system_design",
+    "role": "AGENTIC_ENGINEER",
+    "category": "production_operations",
+    "difficulty": "hard",
+    "question": "Design a prompt versioning and deployment system for a team of 20 engineers working on 50+ agent prompts. It must support branching, A/B testing, rollback within 30 seconds, and metrics attribution per prompt version.",
+    "tags": ["prompt_versioning", "deployment", "ab_testing", "rollback", "collaboration"],
+    "ideal_answer_points": [
+      "Prompt-as-code: git-backed storage with PR review workflow",
+      "Deployment pipeline: staging → canary → production rollout",
+      "A/B testing framework with traffic splitting and metrics collection",
+      "Instant rollback mechanism (feature flags, not redeployment)",
+      "Metrics attribution: tie each response to its prompt version",
+      "Collaboration: conflict resolution when multiple engineers edit same prompt"
+    ]
+  },
+  {
+    "id": "sys_design_ops_03",
+    "track": "agentic",
+    "type": "system_design",
+    "role": "AGENTIC_ENGINEER",
+    "category": "production_operations",
+    "difficulty": "hard",
+    "question": "Design a cost management system for an organization running 200+ LLM-powered agents. It must provide per-agent and per-team cost attribution, enforce budgets, optimize model routing for cost/quality trade-offs, and forecast monthly spend.",
+    "tags": ["cost_management", "budget", "model_routing", "optimization", "forecasting"],
+    "ideal_answer_points": [
+      "Token accounting pipeline with per-request cost attribution",
+      "Cost hierarchy: organization → team → agent → endpoint",
+      "Budget enforcement: soft limits (alerts) vs hard limits (throttle)",
+      "Model routing: cascade from cheap to expensive based on task complexity",
+      "Spend forecasting from historical trends and growth projections",
+      "Dashboard and reporting for engineering and finance stakeholders"
+    ]
+  },
+  {
+    "id": "sys_design_eval_01",
+    "track": "agentic",
+    "type": "system_design",
+    "role": "AGENTIC_ENGINEER",
+    "category": "evaluation_metrics",
+    "difficulty": "expert",
+    "question": "Design an evaluation platform for agentic systems that supports end-to-end task evaluation, component-level scoring, human annotation workflows, and LLM-as-judge pipelines. It must handle 10,000+ eval runs per day across 50 different agent configurations.",
+    "tags": ["eval_platform", "benchmarking", "human_annotation", "llm_judge", "scale"],
+    "ideal_answer_points": [
+      "Eval dataset management: versioning, sampling, stratification",
+      "Component-level evaluation: retrieval, planning, tool use, generation scored independently",
+      "LLM-as-judge pipeline with calibration against human annotators",
+      "Human annotation workflow: assignment, inter-rater reliability, adjudication",
+      "Results aggregation and statistical significance testing",
+      "Integration with CI/CD for regression detection"
+    ]
+  },
+  {
+    "id": "sys_design_eval_02",
+    "track": "agentic",
+    "type": "system_design",
+    "role": "AGENTIC_ENGINEER",
+    "category": "evaluation_metrics",
+    "difficulty": "hard",
+    "question": "Design a hallucination detection system that can evaluate whether an agent's responses are grounded in the provided source documents. It must work across domains (legal, medical, financial), handle long documents, and provide citation-level attribution.",
+    "tags": ["hallucination", "grounding", "attribution", "factuality", "cross_domain"],
+    "ideal_answer_points": [
+      "Claim extraction: decompose agent response into verifiable claims",
+      "Evidence retrieval: map claims back to source document spans",
+      "Entailment scoring: NLI model or LLM-based verification per claim",
+      "Citation generation: link each claim to supporting passage",
+      "Domain-specific calibration (medical vs legal vs financial thresholds)",
+      "Aggregation: document-level and response-level hallucination scores"
+    ]
+  },
+  {
+    "id": "sys_design_eval_03",
+    "track": "agentic",
+    "type": "system_design",
+    "role": "AGENTIC_ENGINEER",
+    "category": "evaluation_metrics",
+    "difficulty": "hard",
+    "question": "Design a regression testing framework for an LLM-powered agent where the model provider ships updates monthly. It must catch behavioral regressions without requiring deterministic outputs, and distinguish between genuine regressions and acceptable variation.",
+    "tags": ["regression_testing", "non_determinism", "model_updates", "statistical_testing"],
+    "ideal_answer_points": [
+      "Test suite design: representative scenarios with expected behaviors (not exact outputs)",
+      "Scoring rubrics that tolerate phrasing variation but catch semantic regressions",
+      "Statistical testing: confidence intervals, not pass/fail on individual cases",
+      "Baseline management: snapshot before/after model update",
+      "Triage workflow: automated flagging → human review of borderline cases",
+      "Fast feedback: results within hours of model update, not days"
+    ]
+  },
+  {
+    "id": "sys_design_ethics_01",
+    "track": "agentic",
+    "type": "system_design",
+    "role": "AGENTIC_ENGINEER",
+    "category": "ethics_policy",
+    "difficulty": "expert",
+    "question": "Design a content moderation system for a platform where users build and deploy custom AI agents. You must prevent agents from generating harmful content while respecting diverse use cases — a medical Q&A agent has different safety needs than a creative writing agent.",
+    "tags": ["content_moderation", "policy", "multi_use_case", "customization", "harmful_content"],
+    "ideal_answer_points": [
+      "Policy tier system: platform-wide baseline + use-case-specific overrides",
+      "Classification pipeline: fast classifier → detailed LLM review for borderline cases",
+      "Use-case profiles: medical, legal, creative, customer support (different thresholds)",
+      "Appeal and human review workflow for false positives",
+      "Policy versioning and transparent change communication",
+      "Metrics: false positive rate per use-case, harmful content escape rate"
+    ]
+  },
+  {
+    "id": "sys_design_ethics_02",
+    "track": "agentic",
+    "type": "system_design",
+    "role": "AGENTIC_ENGINEER",
+    "category": "ethics_policy",
+    "difficulty": "hard",
+    "question": "Design an AI transparency system that lets end-users understand why an agent made a specific decision. It must work for non-technical users, support 'what-if' explanations, and comply with EU AI Act explainability requirements.",
+    "tags": ["explainability", "transparency", "eu_ai_act", "compliance", "user_trust"],
+    "ideal_answer_points": [
+      "Explanation levels: summary (non-technical) → detailed (technical) → raw (audit)",
+      "Chain-of-thought capture and simplification for user presentation",
+      "What-if interface: 'What would happen if I changed X?'",
+      "Decision audit trail: inputs → reasoning → output stored immutably",
+      "EU AI Act compliance: risk classification, documentation, user notification",
+      "User research: what explanations actually build trust vs confuse users"
+    ]
+  },
+  {
+    "id": "sys_design_ethics_03",
+    "track": "agentic",
+    "type": "system_design",
+    "role": "AGENTIC_ENGINEER",
+    "category": "ethics_policy",
+    "difficulty": "hard",
+    "question": "Design a fairness auditing pipeline for an AI hiring agent that screens resumes and conducts initial interviews. It must detect bias across protected categories, provide statistical evidence, and generate compliance reports for legal review.",
+    "tags": ["fairness", "bias_detection", "hiring", "compliance", "audit"],
+    "ideal_answer_points": [
+      "Audit methodology: demographic parity, equal opportunity, calibration across groups",
+      "Synthetic test data generation for protected categories",
+      "Statistical testing framework with appropriate significance thresholds",
+      "Intersectional analysis (not just single-axis bias)",
+      "Report generation: findings, evidence, recommended mitigations",
+      "Continuous monitoring vs point-in-time audit trade-offs"
+    ]
+  },
+  {
+    "id": "sys_design_arch_orch_01",
+    "track": "agentic",
+    "type": "system_design",
+    "role": "AGENTIC_ENGINEER",
+    "category": "architecture_orchestration",
+    "difficulty": "expert",
+    "question": "Design a multi-agent orchestration platform where specialized agents (researcher, coder, reviewer, deployer) collaborate to complete complex software tasks. It must handle agent dependencies, shared state, failure recovery, and prevent infinite delegation loops.",
+    "tags": ["multi_agent", "orchestration", "collaboration", "state_management", "failure_recovery"],
+    "ideal_answer_points": [
+      "Agent registry with capabilities, interfaces, and SLAs",
+      "Task decomposition and dependency graph construction",
+      "Shared state management: immutable task context + agent-local scratch space",
+      "Communication protocol: structured messages, not free-text between agents",
+      "Loop prevention: delegation depth limits, cycle detection in task graph",
+      "Failure recovery: retry, fallback agent, human escalation"
+    ]
+  },
+  {
+    "id": "sys_design_arch_orch_02",
+    "track": "agentic",
+    "type": "system_design",
+    "role": "AGENTIC_ENGINEER",
+    "category": "architecture_orchestration",
+    "difficulty": "hard",
+    "question": "Design a tool orchestration layer for an agent that can call 200+ APIs and tools. It must handle tool discovery, schema validation, rate limiting per tool, and graceful degradation when tools are unavailable.",
+    "tags": ["tool_orchestration", "api_management", "rate_limiting", "schema_validation", "resilience"],
+    "ideal_answer_points": [
+      "Tool registry with capability descriptions, schemas, and health status",
+      "Dynamic tool selection: semantic matching of intent to tool capability",
+      "Schema validation before execution (prevent malformed tool calls)",
+      "Per-tool rate limiting and quota management",
+      "Circuit breaker pattern for flaky tools",
+      "Graceful degradation: inform agent which tools are unavailable, suggest alternatives"
+    ]
+  },
+  {
+    "id": "sys_design_arch_orch_03",
+    "track": "agentic",
+    "type": "system_design",
+    "role": "AGENTIC_ENGINEER",
+    "category": "architecture_orchestration",
+    "difficulty": "hard",
+    "question": "Design a context management system for a long-running agent that processes multi-hour tasks. It must maintain coherent state across 100+ LLM calls, handle context window limits, and allow the agent to 'resume' after interruption.",
+    "tags": ["context_management", "long_running", "state_persistence", "resumption", "memory"],
+    "ideal_answer_points": [
+      "Hierarchical memory: working memory (current step) + episodic (past steps) + semantic (knowledge)",
+      "State checkpointing: serialize agent state for crash recovery",
+      "Context window budget allocation across memory tiers",
+      "Summarization pipeline: compress completed steps into compact representations",
+      "Resume protocol: reconstruct agent context from checkpoint + summaries",
+      "Garbage collection: discard irrelevant context to free token budget"
+    ]
+  },
+
+  {
+    "id": "behavioral_arch_01",
+    "track": "agentic",
+    "type": "behavioral",
+    "role": "AGENTIC_ENGINEER",
+    "category": "architecture",
+    "difficulty": "hard",
+    "question": "Tell me about a time you had to choose between building a monolithic agent and a multi-agent architecture. What factors drove your decision, and would you make the same choice again?",
+    "tags": ["architecture_decision", "monolith_vs_multi", "trade_offs", "complexity"],
+    "ideal_answer_points": [
+      "Clear articulation of requirements that drove the decision",
+      "Monolith pros/cons: simpler debugging vs context window limits",
+      "Multi-agent pros/cons: specialization vs coordination overhead",
+      "Concrete factors: team size, task complexity, latency requirements",
+      "Retrospective: what they learned and would change"
+    ]
+  },
+  {
+    "id": "behavioral_arch_02",
+    "track": "agentic",
+    "type": "behavioral",
+    "role": "AGENTIC_ENGINEER",
+    "category": "architecture",
+    "difficulty": "hard",
+    "question": "Describe a time you had to design the tool/API integration layer for an agent system. What challenges did you face with schema design, error handling, or tool selection?",
+    "tags": ["tool_design", "api_integration", "schema", "error_handling"],
+    "ideal_answer_points": [
+      "Tool schema design (clear descriptions, typed parameters)",
+      "Error handling strategy (retries, fallbacks, user notification)",
+      "Tool selection challenges (too many tools, overlapping capabilities)",
+      "Testing approach for tool integrations",
+      "Evolution: how the tool layer changed as requirements grew"
+    ]
+  },
+  {
+    "id": "behavioral_arch_03",
+    "track": "agentic",
+    "type": "behavioral",
+    "role": "AGENTIC_ENGINEER",
+    "category": "architecture",
+    "difficulty": "hard",
+    "question": "Tell me about a time you had to migrate an agent from one LLM provider to another (or from one model to a different one). What broke, and how did you manage the transition?",
+    "tags": ["model_migration", "provider_switch", "compatibility", "regression"],
+    "ideal_answer_points": [
+      "Motivation for migration (cost, capability, reliability)",
+      "What broke: prompt sensitivity, tool calling format, output structure",
+      "Abstraction layer that isolated the model from business logic",
+      "Eval-driven migration: side-by-side comparison before cutover",
+      "Rollback plan and gradual traffic shift"
+    ]
+  },
+  {
+    "id": "behavioral_arch_04",
+    "track": "agentic",
+    "type": "behavioral",
+    "role": "AGENTIC_ENGINEER",
+    "category": "architecture",
+    "difficulty": "expert",
+    "question": "Describe a situation where you had to design an agent's memory system — deciding what to remember, what to forget, and how to retrieve relevant context. What architecture did you choose and why?",
+    "tags": ["memory_design", "retrieval", "context_management", "architecture_decision"],
+    "ideal_answer_points": [
+      "Memory taxonomy: short-term, episodic, semantic, procedural",
+      "Storage choices: vector DB, key-value store, structured DB, or hybrid",
+      "Retrieval strategy: semantic similarity, recency, importance weighting",
+      "Forgetting mechanism: TTL, relevance decay, explicit user control",
+      "Real-world performance: latency, accuracy, user satisfaction"
+    ]
+  },
+  {
+    "id": "behavioral_arch_05",
+    "track": "agentic",
+    "type": "behavioral",
+    "role": "AGENTIC_ENGINEER",
+    "category": "architecture",
+    "difficulty": "hard",
+    "question": "Tell me about a time you had to scale an agent system from handling 100 requests/day to 10,000+ requests/day. What architectural changes were required?",
+    "tags": ["scaling", "performance", "architecture_evolution", "bottlenecks"],
+    "ideal_answer_points": [
+      "Bottleneck identification: what broke first at scale",
+      "Caching strategy for repeated or similar queries",
+      "Async processing and queue-based architecture",
+      "Model inference optimization (batching, model selection, caching)",
+      "Cost management at scale (not just technical scaling)"
+    ]
   }
 ]
